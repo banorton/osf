@@ -47,9 +47,8 @@ sim.addLens(20e-3, 10e-3, 'name', 'Lens 2');
 field = sim.newField().applyPhaseRect(.2e-3, pi);
 
 % Propagate through all elements and then 10mm past the last element.
-% The optional verbose argument makes the function plot the field at all
-% critical points in the propagation and display the distances and elements
-% at each step.
+% The optional verbose argument makes the function display the distances and
+% elements at each step.
 distAfterLastElement = 10e-3;
 sim.prop(field, distAfterLastElement, 'verbose', true);
 ```
