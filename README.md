@@ -32,11 +32,7 @@ An Optical Simulation Framework (OSF) written in MATLAB for simulating simple sy
   - `Diffuser`: Adds roughness and randomness to the phase.
   - `Aperture`: Applies spatial constraints to the field.
 
-## Example
-'''
-import_dir("../osf");
-
-% Implementation of a simple 4f system.
+## Example: Implementation of a simple 4f system.
 res = 1e-6; field_len = 1e-3;
 sim = Sim(res, field_len, 'paddingRatio', 2);
 
@@ -54,7 +50,4 @@ field = sim.newField().applyPhaseRect(rect_width, pi);
 % at each step.
 distAfterLastElement = 10e-3;
 sim.prop(field, distAfterLastElement, 'verbose', true);
-
-import_dir("../osf", "unload");
-'''
 
