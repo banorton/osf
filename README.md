@@ -1,8 +1,6 @@
 # Optical Simulation Framework
-
 An Optical Simulation Framework (OSF) written in MATLAB for simulating simple systems using Fourier optics. It enables the simulation of light propagation through optical systems using various propagation methods, including the **Rayleigh-Sommerfeld integral** and the **Angular Spectrum method**. Users can define and manage optical elements like lenses, diffusers, and apertures, and simulate their effects on light fields in both 1D and 2D.
 
----
 ## Features
 - **Simulation of Light Propagation**: Supports **Rayleigh-Sommerfeld** and **Angular Spectrum** methods for 1D and 2D fields.
 - **Modular Optical Elements**: Add lenses, diffusers, and apertures to the optical system.
@@ -13,9 +11,7 @@ An Optical Simulation Framework (OSF) written in MATLAB for simulating simple sy
   - Fourier transform visualization with `fft` and `dispFFT`.
 - **Padding Support**: Adds padding for accurate field propagation.
 
----
 ## Classes and Responsibilities
-
 ### 1. **`Sim` Class**: Simulation Controller
 - Manages optical elements, field propagation, and system evolution.
 - **Constructor**:
@@ -23,14 +19,12 @@ An Optical Simulation Framework (OSF) written in MATLAB for simulating simple sy
 - **Key Methods**:
   - `addLens`, `addAperture`, `addDiffuser`: Add elements to the system.
   - `prop`, `propToIndex`, `propToElement`, `propToDist`: Propagate light through the system.
-
 ### 2. **`Field` Class**: Light Field Representation
 - Represents the light field with amplitude and phase.
 - **Key Methods**:
   - `applyPhaseShift`, `applyPhaseRect`: Apply phase modifications.
   - `fft`, `dispFFT`: Compute and visualize Fourier transforms.
   - `wdf`, `dispWDF`: Calculate and display the Wigner Distribution Function.
-
 ### 3. **`Element` Class**: Abstract Optical Component
 - Parent class for all optical elements.
 - **Subclasses**:
@@ -38,7 +32,6 @@ An Optical Simulation Framework (OSF) written in MATLAB for simulating simple sy
   - `Diffuser`: Adds roughness and randomness to the phase.
   - `Aperture`: Applies spatial constraints to the field.
 
----
 ## Example
 '''
 import_dir("../osf");
