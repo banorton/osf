@@ -16,7 +16,7 @@ classdef Plane < Element
             obj.phaseFunction = @() 0;
         end
 
-        function field = apply(obj, field, params)
+        function field = apply(obj, field)
         end
 
     end

@@ -21,14 +21,12 @@ classdef Sim < handle
             addParameter(p, 'paddingRatio', 1, @isnumeric);
             parse(p, resolution, fieldLength, varargin{:});
 
-            % Assign parsed values to object properties
             obj.resolution = p.Results.resolution;
             obj.fieldLength = p.Results.fieldLength;
             obj.dim = p.Results.dim;
             obj.lambda = p.Results.lambda;
             obj.paddingRatio = p.Results.paddingRatio;
 
-            % Set additional object properties
             obj.samples = round(obj.fieldLength / obj.resolution);
             obj.elements = {};
             obj.distances = [];
@@ -40,7 +38,7 @@ classdef Sim < handle
             % from the previous element.
 
             if nargin < 3
-                dist = 0; % Default distance if not provided
+                dist = 0;
             end
 
             if obj.dim ~= element.dim
@@ -71,10 +69,9 @@ classdef Sim < handle
         function field = propToIndex(obj, field, targetIndex, varargin)
             % Propagate to a specific index of an element. Typically,
             % other propagation functions are wrappers of this function.
-            % Note: The element at the index specified is applied to the
+            % Note: The element at the specified index is applied to the
             % field.
 
-            % Parse input arguments
             p = inputParser;
             addParameter(p, 'verbose', false, @(x) islogical(x) || isnumeric(x));
             addParameter(p, 'propMethod', 'as', @(x) ischar(x) && ismember(x, {'as', 'rs'}));
@@ -82,7 +79,6 @@ classdef Sim < handle
             verbose = p.Results.verbose;
             propMethod = p.Results.propMethod;
 
-            % Propagate the field to a specific element by index
             if targetIndex > length(obj.elements)
                 error('Target index exceeds the number of elements in the system.');
             end
@@ -111,7 +107,7 @@ classdef Sim < handle
                 end
                 cumulativeDist = cumulativeDist + segmentDist;
 
-                % Apply element's phase shift or aperture
+                % Apply element's phase shift and aperture
                 field = obj.elements{i}.apply(field);
 
                 if verbose
@@ -122,9 +118,9 @@ classdef Sim < handle
         end
 
         function field = prop(obj, field, varargin)
-            % Propagate through all elements in the system and optionally propagate a specified distance after the last element.
+            % Propagate through all elements in the system and optionally
+            % propagate a specified distance after the last element.
 
-            % Parse input arguments
             p = inputParser;
             addRequired(p, 'field', @(x) isa(x, 'Field'));
             addOptional(p, 'distAfter', 0, @isnumeric);
@@ -132,7 +128,6 @@ classdef Sim < handle
             addParameter(p, 'propMethod', 'as', @(x) ischar(x) && ismember(x, {'as', 'rs'}));
             parse(p, field, varargin{:});
 
-            % Extract parsed arguments
             distAfter = p.Results.distAfter;
             verbose = p.Results.verbose;
             propMethod = p.Results.propMethod;
@@ -175,9 +170,8 @@ classdef Sim < handle
         end
 
         function [field, currDist] = propToDist(obj, field, targetDist, varargin)
-            % Propagate up to a specific distance in the system
+            % Propagate to a specific distance in the system
 
-            % Parse input arguments
             p = inputParser;
             addRequired(p, 'field', @(x) isa(x, 'Field'));
             addRequired(p, 'targetDist', @isnumeric);
@@ -258,7 +252,6 @@ classdef Sim < handle
         function field = propToElement(obj, field, targetName, varargin)
             % Propagate to an element by its name
 
-            % Parse input arguments
             p = inputParser;
             addRequired(p, 'field', @(x) isa(x, 'Field'));
             addRequired(p, 'targetName', @ischar);
@@ -279,7 +272,6 @@ classdef Sim < handle
                 fprintf('Starting propagation to element named: %s\n', targetName);
             end
 
-            % Use the specified propagation method
             field = obj.propToIndex(field, elementIndex, 'verbose', verbose, 'propMethod', propMethod);
 
             if verbose
@@ -296,6 +288,7 @@ classdef Sim < handle
             dx = obj.resolution;
             uin = field.getComplexField();
 
+            % Pad the input array
             uin_padded = obj.addPadding(uin);
             [Ny, Nx] = size(uin_padded);
             k = 2 * pi / obj.lambda;
@@ -323,7 +316,10 @@ classdef Sim < handle
             dx = obj.resolution;
             uin = field.getComplexField();
 
-            Nx = length(uin);
+            % Pad the input array
+            uin_padded = obj.addPadding(uin);
+
+            Nx = length(uin_padded);
             k = 2 * pi / obj.lambda;
 
             dfx = 1 / (Nx * dx);
@@ -331,9 +327,11 @@ classdef Sim < handle
 
             % Kernel for propagation in 1D
             kernel = exp(1i * k * z * sqrt(1 - (obj.lambda * fx).^2));
-            ftu = fftshift(fft(uin));
+            ftu = fftshift(fft(uin_padded));
             ftu = ftu .* kernel;
-            uout = ifft(ifftshift(ftu));
+            uout_padded = ifft(ifftshift(ftu));
+
+            uout = obj.removePadding(uout_padded);
 
             field = field.setComplexField(uout);
         end
@@ -370,7 +368,6 @@ classdef Sim < handle
             % Perform convolution in the spectrum domain
             uout_padded = ifftshift(ifft2(fft2(uin_padded) .* fft2(kernel))) * dx * dx;
 
-            % Remove padding from the propagated field
             uout = obj.removePadding(uout_padded);
             field = field.setComplexField(uout);
         end
@@ -383,11 +380,11 @@ classdef Sim < handle
             end
 
             dx = obj.resolution;
-            n0 = 1; % Refractive index
-            k = 2 * pi / obj.lambda * n0; % Wave number
+            n0 = 1;
+            k = 2 * pi / obj.lambda * n0;
             uin = field.getComplexField();
 
-            % Pad the input field to match the kernel size
+            % Pad the input field
             uin_padded = obj.addPadding(uin);
             Nx = length(uin_padded);
 
@@ -403,11 +400,8 @@ classdef Sim < handle
 
             % Perform convolution in the spectrum domain
             uout_padded = ifft(fft(uin_padded) .* fft(kernel)) * dx * dx;
-
-            % Crop the output to the original field size
             uout = obj.removePadding(uout_padded);
 
-            % Set the propagated field
             field = field.setComplexField(uout);
         end
 

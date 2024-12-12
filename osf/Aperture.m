@@ -15,15 +15,13 @@ classdef Aperture < Element
             obj.apertureType = 'none';
             obj.apertureParams = struct();
 
-            % Set up inputParser for optional parameters
             p = inputParser;
             addParameter(p, 'circ', NaN, @isnumeric);
             addParameter(p, 'rect', NaN, @isnumeric);
-            addParameter(p, 'name', '', @ischar); % Default: empty string
+            addParameter(p, 'name', '', @ischar);
             addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
             parse(p, varargin{:});
 
-            % Assign optional parameters to the Element superclass
             obj.name = p.Results.name;
             obj.dim = p.Results.dim;
 

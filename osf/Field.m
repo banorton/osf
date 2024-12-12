@@ -10,9 +10,6 @@ classdef Field
 
     methods
         function obj = Field(dim, fieldLength, resolution, lambda)
-            % Constructor for the Field class
-            % Creates a new Field object with given dimensionality, fieldLength, and resolution
-
             % Validate dimensionality
             if ~ismember(dim, [1, 2])
                 error('Dimensionality must be either 1 or 2.');
@@ -26,12 +23,12 @@ classdef Field
             % Initialize amplitude and phase based on dimensionality
             if dim == 1
                 samples = round(fieldLength / resolution);
-                obj.amplitude = ones(1, samples); % Initialize amplitude to 1s
-                obj.phase = zeros(1, samples);    % Initialize phase to 0s
+                obj.amplitude = ones(1, samples);
+                obj.phase = zeros(1, samples);
             elseif dim == 2
                 samples = round(fieldLength / resolution);
-                obj.amplitude = ones(samples, samples); % Initialize amplitude to 1s (square array)
-                obj.phase = zeros(samples, samples);    % Initialize phase to 0s (square array)
+                obj.amplitude = ones(samples, samples);
+                obj.phase = zeros(samples, samples);
             end
         end
 
@@ -53,7 +50,7 @@ classdef Field
         end
 
         function obj = applyPhaseShift(obj, phaseShift)
-            % Apply a phase shift to the entire field
+            % Apply a global phase shift
             obj.phase = obj.phase + phaseShift;
         end
 
@@ -66,20 +63,15 @@ classdef Field
         end
 
         function obj = applyPhaseRect(obj, rect_size, phase_shift)
-            % Apply a phase shift to a rectangular region in the center of the phase
-            % Inputs:
-            % rect_size   - Size of the rectangle in meters (scalar for 1D or [width, height] for 2D)
-            % phase_shift - Phase shift in radians (scalar)
-
+            % Create a rectangle shaped phase shift at the center of the
+            % field of a specified size
             if obj.dim == 1
-                % 1D case
                 rect_half_samples = round((rect_size / 2) / obj.resolution);
                 middle = round(length(obj.phase) / 2);
                 start_idx = max(1, middle - rect_half_samples);
                 end_idx = min(length(obj.phase), middle + rect_half_samples);
                 obj.phase(start_idx:end_idx) = obj.phase(start_idx:end_idx) + phase_shift;
             elseif obj.dim == 2
-                % 2D case
                 if isscalar(rect_size)
                     rect_half_width = round((rect_size / 2) / obj.resolution);
                     rect_half_height = rect_half_width;
@@ -117,6 +109,7 @@ classdef Field
         end
 
         function fftField = fft(obj)
+            % Calculate the Fourier tranform of the complex field
             complexField = obj.getComplexField();
             if obj.dim == 1
                 fftField = fftshift(fft(complexField));
@@ -130,14 +123,12 @@ classdef Field
         function disp(obj, titleName)
             % Display the amplitude and phase of the field
             if nargin < 2
-                titleName = ""; % Default title
+                titleName = "";
             end
 
-            % Create the figure
             figure('Color', 'white', 'Position', [657 76 486 846]);
 
             if obj.dim == 1
-                % 1D case
                 samples = length(obj.amplitude);
                 xAxis = linspace(-obj.fieldLength / 2, obj.fieldLength / 2, samples);
 
@@ -156,7 +147,6 @@ classdef Field
                 grid on;
 
             elseif obj.dim == 2
-                % 2D case
                 samples = size(obj.amplitude, 1);
                 xAxis = linspace(-obj.fieldLength / 2, obj.fieldLength / 2, samples);
                 yAxis = linspace(-obj.fieldLength / 2, obj.fieldLength / 2, samples);
@@ -191,11 +181,10 @@ classdef Field
         end
 
         function dispWDF(obj)
-            % Display the WDF (gradient or difference) of the field phase
-            wdfValues = obj.wdf(); % Calculate the WDF
+            % Displays the WDF (gradient or difference) of the field phase
+            wdfValues = obj.wdf();
 
             if obj.dim == 1
-                % 1D case
                 samples = length(wdfValues);
                 xAxis = linspace(-obj.fieldLength / 2, obj.fieldLength / 2, samples);
 
@@ -207,7 +196,6 @@ classdef Field
                 grid on;
 
             elseif obj.dim == 2
-                % 2D case
                 samples = size(wdfValues, 1);
                 xAxis = linspace(-obj.fieldLength / 2, obj.fieldLength / 2, samples);
                 yAxis = linspace(-obj.fieldLength / 2, obj.fieldLength / 2, samples);
@@ -229,10 +217,9 @@ classdef Field
 
         function dispFFT(obj)
             % Display the FFT of the field
-            fftField = obj.fft(); % Calculate the FFT
+            fftField = obj.fft();
 
             if obj.dim == 1
-                % 1D case
                 samples = length(fftField);
                 spatialFreq = linspace(-1 / (2 * obj.resolution), 1 / (2 * obj.resolution), samples);
 
@@ -253,7 +240,6 @@ classdef Field
                 grid on;
 
             elseif obj.dim == 2
-                % 2D case
                 samples = size(fftField, 1);
                 spatialFreq = linspace(-1 / (2 * obj.resolution), 1 / (2 * obj.resolution), samples);
 

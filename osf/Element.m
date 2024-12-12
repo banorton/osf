@@ -40,8 +40,8 @@ classdef (Abstract) Element < handle
         end
 
         function field = applyAperture(obj, field)
+            % Apply the aperture of the optical element to the input field
             fieldLength = field.fieldLength;
-            % Apply the aperture mask to the field
             if obj.dim == 2
                 fieldSize = size(field.amplitude);
 
