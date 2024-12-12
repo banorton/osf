@@ -38,8 +38,9 @@ resolution = 1e-6; fieldLength = 1e-3;
 sim = Sim(resolution, fieldLength);
 
 % Add lens for 4f system.
-sim.addLens(10e-3, 10e-3, 'name', 'Lens 1');
-sim.addLens(40e-3, 10e-3, 'name', 'Lens 2');
+distanceAfterPreviousElement = 20e-3; lensFocalLength = 10e-3;
+sim.addLens(distanceAfterPreviousElement, lensFocalLength, 'name', 'Lens 1');
+sim.addLens(20e-3, 10e-3, 'name', 'Lens 2');
 
 % Create a blank field with the correct dimensions for the simulation, then
 % add a rectangular phase shift with a length of .2mm and a phase shift of pi.
