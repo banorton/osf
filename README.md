@@ -11,7 +11,7 @@ An Optical Simulation Framework (OSF) written in MATLAB for simulating simple sy
   - Fourier transform visualization with `fft` and `dispFFT`.
 - **Padding Support**: Adds padding for accurate field propagation.
 
-## Classes and Responsibilities
+## System Design
 ### 1. **`Sim` Class**: Simulation Controller
 - Manages optical elements, field propagation, and system evolution.
 - **Constructor**:
