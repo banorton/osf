@@ -34,16 +34,16 @@ An Optical Simulation Framework (OSF) written in MATLAB for simulating simple sy
 
 ## Example: Implementation of a simple 4f system.
 ```matlab
-res = 1e-6; field_len = 1e-3;
-sim = Sim(res, field_len, 'paddingRatio', 2);
+resolution = 1e-6; fieldLength = 1e-3;
+sim = Sim(resolution, fieldLength);
 
 % Add lens for 4f system.
 sim.addLens(10e-3, 10e-3, 'name', 'Lens 1');
 sim.addLens(40e-3, 10e-3, 'name', 'Lens 2');
 
-% Create a blank field with the correct dimensions for the simulation.
-rect_width = .2e-3;
-field = sim.newField().applyPhaseRect(rect_width, pi);
+% Create a blank field with the correct dimensions for the simulation, then
+% add a rectangular phase shift with a length of .2mm and a phase shift of pi.
+field = sim.newField().applyPhaseRect(.2e-3, pi);
 
 % Propagate through all elements and then 10mm past the last element.
 % The optional verbose argument makes the function plot the field at all
