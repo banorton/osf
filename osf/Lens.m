@@ -15,6 +15,7 @@ classdef Lens < Element
         function obj = Lens(focalLength, varargin)
             p = inputParser;
             addParameter(p, 'name', '', @ischar);
+            addParameter(p, 'circ', 0, @isnumeric);
             addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
             addRequired(p, 'focalLength', @isnumeric);
             parse(p, focalLength, varargin{:});
@@ -35,6 +36,10 @@ classdef Lens < Element
                 obj.phaseFunction = @(x, lambda) (-2 * pi) / (2 * lambda * obj.focalLength) * (x.^2);
             else
                 error('Dimensionality must be either 1 or 2.');
+            end
+
+            if p.Results.circ > 0
+                obj.addCircAperture(p.Results.circ);
             end
 
         end

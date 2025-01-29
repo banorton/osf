@@ -140,7 +140,7 @@ classdef Field
                 grid on;
 
                 subplot(2, 1, 2);
-                plot(xAxis, obj.phase, 'LineWidth', 1.5);
+                plot(xAxis, unwrap(obj.phase), 'LineWidth', 1.5);
                 title('Field Phase');
                 xlabel('Position (m)');
                 ylabel('Phase (radians)');
