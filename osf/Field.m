@@ -126,7 +126,7 @@ classdef Field
                 titleName = "";
             end
 
-            figure('Color', 'white', 'Position', [657 76 486 846]);
+            fig = figure('Color', 'black', 'Position', [657 76 486 846]);
 
             if obj.dim == 1
                 samples = length(obj.amplitude);
@@ -154,7 +154,7 @@ classdef Field
                 subplot(2, 1, 1);
                 imagesc(xAxis, yAxis, obj.amplitude);
                 colormap(gca, 'gray');
-                colorbar;
+                colorbar('Color', 'white');
                 title('Field Amplitude');
                 xlabel('x (m)');
                 ylabel('y (m)');
@@ -163,8 +163,8 @@ classdef Field
 
                 subplot(2, 1, 2);
                 imagesc(xAxis, yAxis, obj.phase);
+                colorbar('Color', 'white');
                 colormap(gca, 'default');
-                colorbar;
                 title('Field Phase');
                 xlabel('x (m)');
                 ylabel('y (m)');
@@ -177,6 +177,21 @@ classdef Field
 
             if titleName ~= ""
                 sgtitle(titleName, 'FontSize', 18, 'FontWeight', 'bold');
+            end
+
+            % Find all axes in the figure and change font color
+            ax = findall(fig, 'Type', 'axes');
+            for i = 1:length(ax)
+                ax(i).XColor = 'white';  % Change X-axis color
+                ax(i).YColor = 'white';  % Change Y-axis color
+                ax(i).ZColor = 'white';  % Change Z-axis color (if 3D)
+                ax(i).Color = 'black';   % Set axes background to black
+            end
+
+            % Change title, labels, and other text objects
+            textObjs = findall(fig, 'Type', 'text');
+            for i = 1:length(textObjs)
+                textObjs(i).Color = 'white';  % Change text color
             end
         end
 
@@ -223,7 +238,7 @@ classdef Field
                 samples = length(fftField);
                 spatialFreq = linspace(-1 / (2 * obj.resolution), 1 / (2 * obj.resolution), samples);
 
-                figure('Color', 'white', 'Position', [657 76 486 846]);
+                figure('Color', 'black', 'Position', [657 76 486 846]);
 
                 subplot(2, 1, 1);
                 plot(spatialFreq, abs(fftField), 'LineWidth', 1.5);
@@ -243,7 +258,7 @@ classdef Field
                 samples = size(fftField, 1);
                 spatialFreq = linspace(-1 / (2 * obj.resolution), 1 / (2 * obj.resolution), samples);
 
-                figure('Color', 'white', 'Position', [657 76 486 846]);
+                figure('Color', 'black', 'Position', [657 76 486 846]);
 
                 subplot(2, 1, 1);
                 imagesc(spatialFreq, spatialFreq, abs(fftField));
