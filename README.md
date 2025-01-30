@@ -38,7 +38,7 @@ resolution = 1e-6; fieldLength = 1e-3;
 sim = Sim(resolution, fieldLength);
 
 % Add lens for 4f system.
-distanceAfterPreviousElement = 20e-3; lensFocalLength = 10e-3;
+distanceAfterPreviousElement = 10e-3; lensFocalLength = 10e-3;
 sim.addLens(distanceAfterPreviousElement, lensFocalLength, 'name', 'Lens 1');
 sim.addLens(20e-3, 10e-3, 'name', 'Lens 2');
 
