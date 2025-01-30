@@ -337,37 +337,46 @@ classdef Sim < handle
         end
 
         function field = rayleighSommerfeldPropagation(obj, field, z)
-            % Rayleigh-Sommerfeld Propagation (2D)
+            % Rayleigh-Sommerfeld Propagation with Evanescent Waves (2D)
             if z == 0
                 field = field.setComplexField(field.getComplexField());
                 return;
             end
 
-            dx = obj.resolution;
-            n0 = 1;
-            k = 2 * pi / obj.lambda * n0;
-            uin = field.getComplexField();
+            dx = obj.resolution;  % Spatial sampling interval
+            n0 = 1;  % Background refractive index
+            lambda = obj.lambda;  % Wavelength
+            k = 2 * pi / lambda * n0;  % Wavenumber
 
-            % Add padding to the input field
+            uin = field.getComplexField();
             uin_padded = obj.addPadding(uin);
             [Ny, Nx] = size(uin_padded);
 
-            % Generate the kernel grid
-            xkernel = (-Nx / 2 : (Nx / 2 - 1)) * dx;
-            ykernel = (-Ny / 2 : (Ny / 2 - 1)) * dx;
-            [X, Y] = meshgrid(xkernel, ykernel);
-            r = sqrt(X.^2 + Y.^2 + z^2);
+            % Generate spatial frequency grid
+            dkx = 2 * pi / (Nx * dx);
+            dky = 2 * pi / (Ny * dx);
+            kx = (-Nx/2:Nx/2-1) * dkx;
+            ky = (-Ny/2:Ny/2-1) * dky;
+            [KX, KY] = meshgrid(kx, ky);
 
-            % Rayleigh-Sommerfeld Kernel for propagation
-            if z > 0
-                kernel = (2 * pi)^-1 * exp(1i * k * r) ./ r.^2 .* z .* (1 ./ r - 1i * k);
-            else
-                kernel = conj((2 * pi)^-1 * exp(1i * k * r) ./ r.^2 .* z .* (1 ./ r - 1i * k));
-            end
+            % Compute kz (propagation term) with evanescent component
+            K2 = KX.^2 + KY.^2;
+            k_z = sqrt(k^2 - K2);  % Standard propagation term
 
-            % Perform convolution in the spectrum domain
-            uout_padded = ifftshift(ifft2(fft2(uin_padded) .* fft2(kernel))) * dx * dx;
+            % Handle evanescent waves (imaginary k_z)
+            evanescent_mask = K2 > k^2;
+            k_z(evanescent_mask) = 1i * sqrt(K2(evanescent_mask) - k^2);  % Decay in z
 
+            % Compute transfer function including evanescent waves
+            H = exp(1i * k_z * z);  % Phase term for propagating waves
+            H(evanescent_mask) = exp(-abs(k_z(evanescent_mask)) * z);  % Exponential decay for evanescent waves
+
+            % Apply propagation in Fourier domain
+            Uin_FT = fftshift(fft2(uin_padded));
+            Uout_FT = Uin_FT .* H;
+            uout_padded = ifft2(ifftshift(Uout_FT));
+
+            % Remove padding and update the field
             uout = obj.removePadding(uout_padded);
             field = field.setComplexField(uout);
         end
