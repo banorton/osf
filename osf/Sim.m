@@ -286,6 +286,7 @@ classdef Sim < handle
             % Angular Spectrum Propagation (2D)
             n0 = 1;
             dx = obj.resolution;
+            dy = dx;
             uin = field.getComplexField();
 
             % Pad the input array
@@ -293,11 +294,11 @@ classdef Sim < handle
             [Ny, Nx] = size(uin_padded);
             k = 2 * pi / obj.lambda;
 
-            dfx = 1 / Nx / dx;
-            fx = -Nx / 2 * dfx : dfx : (Nx / 2 - 1) * dfx;
+            dfx = 1 / (Nx*dx);
+            fx = (-Nx/2:Nx/2 - 1) * dfx;
 
-            dfy = 1 / Ny / dx;
-            fy = -Ny / 2 * dfy : dfy : (Ny / 2 - 1) * dfy;
+            dfy = 1 / (Ny*dy);
+            fy = (-Ny/2:Ny/2 - 1) * dfy;
 
             % Kernel for propagation
             p = fftshift(k * z * sqrt(n0^2 - obj.lambda^2 * (ones(Ny, 1) * (fx.^2) + (fy'.^2) * ones(1, Nx))));

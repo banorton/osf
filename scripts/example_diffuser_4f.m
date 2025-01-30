@@ -21,9 +21,9 @@ sim.addLens(lens_dist*(1-diff_dist_ratio), f2, 'name', 'Lens 2');
 % sim.propToDist(sim.newField(), 55e-3, 'propMethod', 'rs').disp();
 % sim.propToDist(sim.newField(), 75e-3, 'propMethod', 'rs').disp();
 
-sim.prop(sim.newField(), 50e-3, 'propMethod', 'rs', 'verbose', true);
+sim.prop(sim.newField(), 50e-3, 'verbose', true);
 
-sim.propToDist(sim.newField(), 125e-3, 'propMethod', 'rs').disp();
+sim.propToDist(sim.newField(), 125e-3).disp();
 % sim.propToDist(sim.newField(), 150e-3, 'propMethod', 'rs').disp();
 % sim.propToElement(sim.newField(), 'Diffuser', 'propMethod', 'rs').disp();
 
