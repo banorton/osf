@@ -64,11 +64,16 @@ classdef Sim < handle
             obj.addElement(dist, aperture);
         end
 
+        function addPlane(obj, dist, varargin)
+            plane = Plane('dim', obj.dim, varargin{:});
+            obj.addElement(dist, plane);
+        end
+
         %% PROPAGATION METHODS
         % These methods are typically wrappers around the propagation calculation methods.
         function field = propToIndex(obj, field, targetIndex, varargin)
             % Propagate to a specific index of an element. Typically,
-            % other propagation functions are wrappers of this function.
+            % other propagation methods are wrappers of this function.
             % Note: The element at the specified index is applied to the
             % field.
 
@@ -282,34 +287,68 @@ classdef Sim < handle
         end
 
         %% PROPAGATION CALCULATION METHODS
+        % function field = angularSpectrumPropagation(obj, field, z)
+        %     % Angular Spectrum Propagation (2D)
+        %     n0 = 1;
+        %     dx = obj.resolution;
+        %     dy = dx;
+        %     uin = field.getComplexField();
+        %
+        %     % Pad the input array
+        %     uin_padded = obj.addPadding(uin);
+        %     [Ny, Nx] = size(uin_padded);
+        %     k = 2 * pi / obj.lambda;
+        %
+        %     dfx = 1 / (Nx*dx);
+        %     fx = (-Nx/2:Nx/2 - 1) * dfx;
+        %
+        %     dfy = 1 / (Ny*dy);
+        %     fy = (-Ny/2:Ny/2 - 1) * dfy;
+        %
+        %     % Kernel for propagation
+        %     p = fftshift(k * z * sqrt(n0^2 - obj.lambda^2 * (ones(Ny, 1) * (fx.^2) + (fy'.^2) * ones(1, Nx))));
+        %     p = p - p(1, 1);
+        %     kernel = exp(1i * p);
+        %
+        %     ftu = kernel .* fft2(uin_padded);
+        %     uout_padded = ifft2(ftu);
+        %
+        %     uout = obj.removePadding(uout_padded);
+        %     field = field.setComplexField(uout);
+        % end
+        
         function field = angularSpectrumPropagation(obj, field, z)
-            % Angular Spectrum Propagation (2D)
-            n0 = 1;
-            dx = obj.resolution;
-            dy = dx;
-            uin = field.getComplexField();
+            % Grid size
+            u_in = obj.addPadding(field.getComplexField());
+            [Nx, Ny] = size(u_in);
+            dx = obj.resolution; dy = obj.resolution;
+            lambda = obj.lambda;
 
-            % Pad the input array
-            uin_padded = obj.addPadding(uin);
-            [Ny, Nx] = size(uin_padded);
-            k = 2 * pi / obj.lambda;
+            % More readable but slightly less efficient frequency axis computation:
+            % fx = (-Nx/2:Nx/2-1) / (Nx * dx);
+            % fy = (-Ny/2:Ny/2-1) / (Ny * dy);
 
-            dfx = 1 / (Nx*dx);
-            fx = (-Nx/2:Nx/2 - 1) * dfx;
+            % Optimized spatial frequency computation using linspace
+            fx = linspace(-1/(2*dx), (1/(2*dx)) - 1/(Nx*dx), Nx);
+            fy = linspace(-1/(2*dy), (1/(2*dy)) - 1/(Ny*dy), Ny);
+            [FX, FY] = meshgrid(fx, fy);
 
-            dfy = 1 / (Ny*dy);
-            fy = (-Ny/2:Ny/2 - 1) * dfy;
+            % Compute longitudinal wavevector component k_z
+            k = 2 * pi / lambda;
+            k_z = 2 * pi * sqrt((1 / lambda^2) - FX.^2 - FY.^2);
 
-            % Kernel for propagation
-            p = fftshift(k * z * sqrt(n0^2 - obj.lambda^2 * (ones(Ny, 1) * (fx.^2) + (fy'.^2) * ones(1, Nx))));
-            p = p - p(1, 1);
-            kernel = exp(1i * p);
+            % Compute transfer function
+            H = exp(1i * k_z * z);
 
-            ftu = kernel .* fft2(uin_padded);
-            uout_padded = ifft2(ftu);
+            % Find the angular spectrum.
+            angular_spectrum_in = fftshift(fft2(u_in));
 
-            uout = obj.removePadding(uout_padded);
-            field = field.setComplexField(uout);
+            % Propagate the angular spectrum using the transfer function.
+            angular_spectrum_out = angular_spectrum_in .* H;
+
+            % Inverse Fourier transform to get the propagated field.
+            u_out = obj.removePadding(ifft2(ifftshift(angular_spectrum_out)));
+            field = field.setComplexField(u_out);
         end
 
         function field = angularSpectrumPropagation1D(obj, field, z)
