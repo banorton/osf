@@ -7,12 +7,16 @@ res = 1e-6; field_len = 1e-3;
 sim = Sim(res, field_len, 'paddingRatio', 2);
 
 % Add lens for 4f system.
-sim.addLens(20e-3, 20e-3, 'name', 'Lens 1');
+distAfterPreviousElement = 20e-3;
+focalLength = 20e-3;
+sim.addLens(distAfterPreviousElement, focalLength, 'name', 'Lens 1');
 sim.addPlane(20e-3, 'name', 'Fourier Plane');
 sim.addLens(40e-3, 20e-3, 'name', 'Lens 2');
 
 % Create a blank field with the correct dimensions for the simulation.
 rect_width = .2e-3;
+
+% Add a rectangular phase object with a phase shift of pi to the field.
 field = sim.newField().applyPhaseRect(rect_width, pi);
 
 % Propagate through all elements and then 10mm past the last element.

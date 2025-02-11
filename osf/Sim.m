@@ -318,26 +318,25 @@ classdef Sim < handle
         % end
         
         function field = angularSpectrumPropagation(obj, field, z)
-            % Grid size
+            % Get complex input field and add padding.
             u_in = obj.addPadding(field.getComplexField());
+
+            % Parameters for propagation.
             [Nx, Ny] = size(u_in);
             dx = obj.resolution; dy = obj.resolution;
             lambda = obj.lambda;
 
-            % More readable but slightly less efficient frequency axis computation:
-            % fx = (-Nx/2:Nx/2-1) / (Nx * dx);
-            % fy = (-Ny/2:Ny/2-1) / (Ny * dy);
-
-            % Optimized spatial frequency computation using linspace
-            fx = linspace(-1/(2*dx), (1/(2*dx)) - 1/(Nx*dx), Nx);
-            fy = linspace(-1/(2*dy), (1/(2*dy)) - 1/(Ny*dy), Ny);
+            % Frequency axis computation.
+            fx = (-Nx/2:Nx/2-1) / (Nx * dx);
+            fy = (-Ny/2:Ny/2-1) / (Ny * dy);
             [FX, FY] = meshgrid(fx, fy);
+            [FX_sqr, FY_sqr] = meshgrid(fx.^2, fy.^2);
 
-            % Compute longitudinal wavevector component k_z
+            % Compute longitudinal wavevector component k_z.
             k = 2 * pi / lambda;
-            k_z = 2 * pi * sqrt((1 / lambda^2) - FX.^2 - FY.^2);
+            k_z = 2 * pi * sqrt((1 / lambda^2) - FX_sqr - FY_sqr);
 
-            % Compute transfer function
+            % Compute transfer function.
             H = exp(1i * k_z * z);
 
             % Find the angular spectrum.
