@@ -1,5 +1,6 @@
 clearvars; clc; close all;
-import_dir("../osf");
+import_dir("../osf/lib");
+import_dir("../osf/utils");
 
 %%
 % Create 2D simulation with a resolution of 1um and a view size of 1mm by 1mm.
@@ -17,4 +18,5 @@ field = sim.newField().applyPhaseRect(.2e-3, pi);
 sim.prop(field, 1e-3, 'verbose', true);
 
 %%
-import_dir("../osf", "unload");
+import_dir("../osf/lib", "unload");
+import_dir("../osf/utils", "unload");

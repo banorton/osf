@@ -1,5 +1,6 @@
 clearvars; clc; close all;
-import_dir("../osf");
+import_dir("../osf/lib");
+import_dir("../osf/utils");
 
 %%
 sim = Sim(1e-6, 1e-3, 'paddingRatio', 2, 'lambda', 532e-9, 'dim', 2);
@@ -12,4 +13,5 @@ field = sim.newField();
 sim.prop(field, 50e-3, 'propMethod', 'rs').disp();
 
 %%
-import_dir("../osf", "unload");
+import_dir("../osf/lib", "unload");
+import_dir("../osf/utils", "unload");

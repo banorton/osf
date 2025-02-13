@@ -1,5 +1,6 @@
 clearvars; clc; close all;
-import_dir("../osf");
+import_dir("../osf/lib");
+import_dir("../osf/utils");
 
 %%
 % Implementation of a simple 4f system.
@@ -16,4 +17,5 @@ as_prop = sim.prop(field, 10e-3, 'propMethod', 'as').disp("Using AS Propagation"
 rs_prop = sim.prop(field, 10e-3, 'propMethod', 'rs').disp("Using RS Propagation");
 
 %%
-import_dir("../osf", "unload");
+import_dir("../osf/lib", "unload");
+import_dir("../osf/utils", "unload");

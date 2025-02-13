@@ -1,5 +1,6 @@
 clearvars; clc; close all;
-import_dir("../osf");
+import_dir("../osf/lib");
+import_dir("../osf/utils");
 
 %%
 sim = Sim(.5e-6, 1e-3, 'paddingRatio', 0, 'lambda', 532e-9, 'dim', 2);
@@ -30,4 +31,5 @@ sim.propToDist(sim.newField(), 125e-3).disp();
 % analyzePhaseCutoff(sim.elements{2}.apply(sim.newField()).getComplexField(), 532e-9, 1e-7)
 
 %%
-import_dir("../osf", "unload");
+import_dir("../osf/lib", "unload");
+import_dir("../osf/utils", "unload");
