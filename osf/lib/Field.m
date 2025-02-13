@@ -126,7 +126,7 @@ classdef Field
                 titleName = "";
             end
 
-            fig = figure('Color', 'black', 'Position', [657 76 486 846]);
+            fig = figure('Position', [657 76 486 846]);
 
             if obj.dim == 1
                 samples = length(obj.amplitude);
@@ -154,22 +154,24 @@ classdef Field
                 subplot(2, 1, 1);
                 imagesc(xAxis, yAxis, obj.amplitude);
                 colormap(gca, 'gray');
-                colorbar('Color', 'white');
+                colorbar;
                 title('Field Amplitude');
                 xlabel('x (m)');
                 ylabel('y (m)');
                 axis equal;
                 axis tight;
+                grid off;
 
                 subplot(2, 1, 2);
-                imagesc(xAxis, yAxis, obj.phase);
-                colorbar('Color', 'white');
-                colormap(gca, 'default');
+                imagesc(xAxis, yAxis, phase_unwrap(obj.phase));
+                colorbar;
+                colormap(gca, 'bone');
                 title('Field Phase');
                 xlabel('x (m)');
                 ylabel('y (m)');
                 axis equal;
                 axis tight;
+                grid off;
 
             else
                 error('Dimensionality must be either 1 or 2.');
@@ -179,20 +181,65 @@ classdef Field
                 sgtitle(titleName, 'FontSize', 18, 'FontWeight', 'bold');
             end
 
-            % Find all axes in the figure and change font color
-            ax = findall(fig, 'Type', 'axes');
-            for i = 1:length(ax)
-                ax(i).XColor = 'white';  % Change X-axis color
-                ax(i).YColor = 'white';  % Change Y-axis color
-                ax(i).ZColor = 'white';  % Change Z-axis color (if 3D)
-                ax(i).Color = 'black';   % Set axes background to black
+            % Apply theme
+            obj.applyTheme(fig);
+        end
+
+        function phaseCross(obj, varargin)
+            % Plots the cross section of the phase of the field
+            % Default is along the x-axis at the middle
+            % Optional inputs:
+            %   'axis' - 'x' (default) or 'y'
+            %   'pos'  - row or column index (default: middle)
+
+            p = inputParser;
+            addParameter(p, 'axis', 'x', @(x) ischar(x) && ismember(x, {'x', 'y'}));
+            addParameter(p, 'pos', [], @(x) isnumeric(x) && isscalar(x));
+            parse(p, varargin{:});
+
+            % Extract parsed inputs
+            axisType = p.Results.axis;
+            pos = p.Results.pos;
+
+            % Determine cross section
+            if obj.dim == 1
+                xAxis = linspace(-obj.fieldLength / 2, obj.fieldLength / 2, length(obj.phase));
+                phaseData = obj.phase;
+            elseif obj.dim == 2
+                [rows, cols] = size(obj.phase);
+                if isempty(pos)
+                    pos = round((axisType == 'x') * rows / 2 + (axisType == 'y') * cols / 2);
+                end
+
+                if axisType == 'x'
+                    if pos < 1 || pos > rows
+                        error('Position out of bounds for x-axis cross-section.');
+                    end
+                    xAxis = linspace(-obj.fieldLength / 2, obj.fieldLength / 2, cols);
+                    phaseData = obj.phase(pos, :);
+                else
+                    if pos < 1 || pos > cols
+                        error('Position out of bounds for y-axis cross-section.');
+                    end
+                    xAxis = linspace(-obj.fieldLength / 2, obj.fieldLength / 2, rows);
+                    phaseData = obj.phase(:, pos);
+                end
+            else
+                error('Dimensionality must be either 1 or 2.');
             end
 
-            % Change title, labels, and other text objects
-            textObjs = findall(fig, 'Type', 'text');
-            for i = 1:length(textObjs)
-                textObjs(i).Color = 'white';  % Change text color
-            end
+            % Create figure
+            fig = figure('Position', [657 76 486 846]);
+
+            % Plot phase cross-section
+            plot(xAxis, unwrap(phaseData), 'LineWidth', 1.5);
+            xlabel('Position (m)');
+            ylabel('Phase (radians)');
+            title(sprintf('Phase Cross-section (%s-axis, pos = %d)', axisType, pos));
+            grid off;
+
+            % Apply theme
+            obj.applyTheme(fig);
         end
 
         function dispWDF(obj)
@@ -282,6 +329,42 @@ classdef Field
 
             else
                 error('Dimensionality must be either 1 or 2.');
+            end
+        end
+
+        function applyTheme(obj, fig)
+            % Applies a consistent theme to a figure with a black background,
+            % white text, and appropriate formatting.
+
+            if nargin < 1
+                fig = gcf; % Use current figure if none is specified
+            end
+
+            % Set figure background color
+            fig.Color = 'black';
+
+            % Find all axes in the figure and apply theme
+            ax = findall(fig, 'Type', 'axes');
+            for i = 1:length(ax)
+                ax(i).XColor = 'white';  % Change X-axis color
+                ax(i).YColor = 'white';  % Change Y-axis color
+                ax(i).ZColor = 'white';  % Change Z-axis color (if 3D)
+                ax(i).Color = 'black';   % Set axes background to black
+                ax(i).GridColor = [0.5, 0.5, 0.5]; % Light gray grid lines
+                ax(i).LineWidth = 1.2; % Make axis lines slightly thicker
+            end
+
+            % Change title, labels, and other text objects
+            textObjs = findall(fig, 'Type', 'text');
+            for i = 1:length(textObjs)
+                textObjs(i).Color = 'white';  % Change text color
+                textObjs(i).FontWeight = 'bold';
+            end
+
+            % Apply to colorbars if present
+            colorbars = findall(fig, 'Type', 'colorbar');
+            for i = 1:length(colorbars)
+                colorbars(i).Color = 'white';
             end
         end
 
