@@ -505,7 +505,7 @@ classdef Sim < handle
             end
         end
 
-        function plotSetup(obj)
+        function disp(obj)
             % Plots an overhead view of the optical setup, showing elements in order
             % with their respective distances.
 
@@ -533,6 +533,7 @@ classdef Sim < handle
 
             % Initialize position tracker
             currentX = 0;
+            componentCenters = []; % Store center positions for tick marks
 
             % Iterate over elements and plot them
             for i = 1:length(obj.elements)
@@ -556,6 +557,9 @@ classdef Sim < handle
                     'HorizontalAlignment', 'center', ...
                     'FontSize', 10, 'FontWeight', 'bold', 'Rotation', 45);
 
+                % Store component center position
+                componentCenters = [componentCenters, currentX];
+
                 % Move position forward by the corresponding distance (if not the last element)
                 if i < length(obj.distances)
                     currentX = currentX + obj.distances(i);
@@ -564,10 +568,26 @@ classdef Sim < handle
 
             % Adjust axis limits to maximize plot area inside the figure
             xlim([min(0, -2 * currentX), currentX + 2 * currentX]);
-            ylim([-0.06, 0.06]); % Ensures enough space for elements and labels
-            
-            % xlim([-padding, currentX + padding]);
-            % ylim([-elementHeight, elementHeight * 2]); % Allows space for labels
+            ylim([-0.05, 0.05]); % Zoomed out slightly to fit labels
+
+            % Draw thick black baseline at the bottom
+            baselineY = -0.04;
+            plot([min(componentCenters), max(componentCenters)], [baselineY, baselineY], ...
+                'k', 'LineWidth', 2);
+
+            % Draw tick marks at component centers and label distances
+            tickHeight = 0.002; % Small vertical ticks
+            for i = 1:length(componentCenters)
+                xTick = componentCenters(i);
+                plot([xTick, xTick], [baselineY - tickHeight, baselineY + tickHeight], 'k', 'LineWidth', 2);
+
+                % Add distance labels between components
+                if i < length(componentCenters)
+                    midX = (componentCenters(i) + componentCenters(i+1)) / 2;
+                    text(midX, baselineY - 0.01, sprintf('%.3f m', obj.distances(i)), ...
+                        'HorizontalAlignment', 'center', 'FontSize', 10);
+                end
+            end
 
             hold off;
 
@@ -599,7 +619,6 @@ classdef Sim < handle
                     'FaceColor', 'r', 'EdgeColor', 'k', 'LineWidth', 1.5);
             end
         end
-
 
     end
 end

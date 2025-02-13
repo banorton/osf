@@ -10,7 +10,7 @@ sim.addLens(20e-3, 20e-3, 'name', 'Lens 1');
 sim.addPlane(20e-3, 'name', 'Fourier Plane');
 sim.addLens(40e-3, 20e-3, 'name', 'Lens 2');
 
-sim.plotSetup();
+sim.disp();
 
 % field = sim.newField().applyPhaseRect(.2e-3, pi);
 % field = sim.newField();
