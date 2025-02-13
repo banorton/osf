@@ -6,6 +6,8 @@ classdef Field
         resolution   % Spatial resolution in meters per pixel (scalar)
         lambda       % Wavelength of light in meters
         dim          % Dimensionality of the field (1 or 2)
+
+        cmap
     end
 
     methods
@@ -19,6 +21,7 @@ classdef Field
             obj.fieldLength = fieldLength;
             obj.resolution = resolution;
             obj.lambda = lambda;
+            obj.cmap = 'bone';
 
             % Initialize amplitude and phase based on dimensionality
             if dim == 1
@@ -160,18 +163,16 @@ classdef Field
                 ylabel('y (m)');
                 axis equal;
                 axis tight;
-                grid off;
 
                 subplot(2, 1, 2);
                 imagesc(xAxis, yAxis, phase_unwrap(obj.phase));
                 colorbar;
-                colormap(gca, 'bone');
+                colormap(gca, obj.cmap);
                 title('Field Phase');
                 xlabel('x (m)');
                 ylabel('y (m)');
                 axis equal;
                 axis tight;
-                grid off;
 
             else
                 error('Dimensionality must be either 1 or 2.');

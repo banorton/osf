@@ -316,7 +316,7 @@ classdef Sim < handle
         %     uout = obj.removePadding(uout_padded);
         %     field = field.setComplexField(uout);
         % end
-        
+
         function field = angularSpectrumPropagation(obj, field, z)
             % Get complex input field and add padding.
             u_in = obj.addPadding(field.getComplexField());
@@ -486,9 +486,120 @@ classdef Sim < handle
             wrappedPhi = atan2(sin(phi), cos(phi));
         end
 
-        function field = newField(obj)
+        function field = newField(obj, varargin)
             % Create a new Field instance with system dimensions
+            % Optional input:
+            %   'cmap' - colormap for the phase plot (inherits from Field if not specified)
+
+            p = inputParser;
+            addOptional(p, 'cmap', [], @(x) ischar(x) && ismember(x, ...
+                {'turbo', 'parula', 'jet', 'hot', 'gray', 'cool', ...
+                    'spring', 'summer', 'autumn', 'winter', 'bone', 'copper', 'pink'}));
+            parse(p, varargin{:});
+
             field = Field(obj.dim, obj.fieldLength, obj.resolution, obj.lambda);
+
+            % Only override cmap if the user provides an input
+            if ~isempty(p.Results.cmap)
+                field.cmap = p.Results.cmap;
+            end
         end
+
+        function plotSetup(obj)
+            % Plots an overhead view of the optical setup, showing elements in order
+            % with their respective distances.
+
+            % Ensure there are elements to plot
+            if isempty(obj.elements)
+                error('No elements to display in the simulation.');
+            end
+
+            % Initialize figure with wider and slightly taller dimensions
+            fig = figure('Color', 'white', 'Position', [600 300 1200 400]);
+            hold on;
+            axis equal;
+
+            % Remove grid, tick marks, and box outline
+            ax = gca;
+            ax.XColor = 'none';
+            ax.YColor = 'none';
+            ax.XTick = [];
+            ax.YTick = [];
+            ax.Box = 'off';
+
+            % Define common element height
+            elementHeight = 0.04;  % Consistent height for all elements
+            labelOffset = 0.02;    % Offset to improve label visibility
+
+            % Initialize position tracker
+            currentX = 0;
+
+            % Iterate over elements and plot them
+            for i = 1:length(obj.elements)
+                element = obj.elements{i};
+
+                % Determine shape based on element type
+                switch lower(element.elementType)
+                    case 'lens'
+                        plotLens(currentX);
+                    case 'diffuser'
+                        plotDiffuser(currentX);
+                    case 'plane'
+                        plotPlane(currentX);
+                    otherwise
+                        warning('Unknown element type: %s', element.elementType);
+                        plotUnknown(currentX);
+                end
+
+                % Add label closer to the element
+                text(currentX, elementHeight / 2 + labelOffset, element.name, ...
+                    'HorizontalAlignment', 'center', ...
+                    'FontSize', 10, 'FontWeight', 'bold', 'Rotation', 45);
+
+                % Move position forward by the corresponding distance (if not the last element)
+                if i < length(obj.distances)
+                    currentX = currentX + obj.distances(i);
+                end
+            end
+
+            % Adjust axis limits to maximize plot area inside the figure
+            xlim([min(0, -2 * currentX), currentX + 2 * currentX]);
+            ylim([-0.06, 0.06]); % Ensures enough space for elements and labels
+            
+            % xlim([-padding, currentX + padding]);
+            % ylim([-elementHeight, elementHeight * 2]); % Allows space for labels
+
+            hold off;
+
+            function plotLens(x)
+                % Plot a lens as an ellipse with pointed ends
+                width = 0.005;
+                t = linspace(0, pi, 20);
+                X = [cos(t), -cos(t)] * width/2 + x;
+                Y = [sin(t), -sin(t)] * elementHeight / 2;
+                fill(X, Y, 'b', 'EdgeColor', 'k', 'LineWidth', 1.5);
+            end
+
+            function plotDiffuser(x)
+                % Plot a diffuser as a slim rectangle
+                width = 0.002;
+                rectangle('Position', [x - width/2, -elementHeight/2, width, elementHeight], ...
+                    'FaceColor', 'g', 'EdgeColor', 'k', 'LineWidth', 1.5);
+            end
+
+            function plotPlane(x)
+                % Plot a plane as a vertical line with consistent height
+                plot([x, x], [-elementHeight/2, elementHeight/2], 'k', 'LineWidth', 2);
+            end
+
+            function plotUnknown(x)
+                % Plot unknown elements as a simple rectangle
+                width = 0.003;
+                rectangle('Position', [x - width/2, -elementHeight/2, width, elementHeight], ...
+                    'FaceColor', 'r', 'EdgeColor', 'k', 'LineWidth', 1.5);
+            end
+        end
+
+
     end
 end
