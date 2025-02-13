@@ -11,6 +11,7 @@ classdef Sim < handle
     end
 
     methods
+
         %% CONSTRUCTOR
         function obj = Sim(resolution, fieldLength, varargin)
             p = inputParser;
@@ -33,6 +34,7 @@ classdef Sim < handle
         end
 
         %% ELEMENT MANAGEMENT
+
         function addElement(obj, dist, element)
             % Add an optical element to the system with a specific distance
             % from the previous element.
@@ -71,6 +73,7 @@ classdef Sim < handle
 
         %% PROPAGATION METHODS
         % These methods are typically wrappers around the propagation calculation methods.
+
         function field = propToIndex(obj, field, targetIndex, varargin)
             % Propagate to a specific index of an element. Typically,
             % other propagation methods are wrappers of this function.
@@ -287,35 +290,6 @@ classdef Sim < handle
         end
 
         %% PROPAGATION CALCULATION METHODS
-        % function field = angularSpectrumPropagation(obj, field, z)
-        %     % Angular Spectrum Propagation (2D)
-        %     n0 = 1;
-        %     dx = obj.resolution;
-        %     dy = dx;
-        %     uin = field.getComplexField();
-        %
-        %     % Pad the input array
-        %     uin_padded = obj.addPadding(uin);
-        %     [Ny, Nx] = size(uin_padded);
-        %     k = 2 * pi / obj.lambda;
-        %
-        %     dfx = 1 / (Nx*dx);
-        %     fx = (-Nx/2:Nx/2 - 1) * dfx;
-        %
-        %     dfy = 1 / (Ny*dy);
-        %     fy = (-Ny/2:Ny/2 - 1) * dfy;
-        %
-        %     % Kernel for propagation
-        %     p = fftshift(k * z * sqrt(n0^2 - obj.lambda^2 * (ones(Ny, 1) * (fx.^2) + (fy'.^2) * ones(1, Nx))));
-        %     p = p - p(1, 1);
-        %     kernel = exp(1i * p);
-        %
-        %     ftu = kernel .* fft2(uin_padded);
-        %     uout_padded = ifft2(ftu);
-        %
-        %     uout = obj.removePadding(uout_padded);
-        %     field = field.setComplexField(uout);
-        % end
 
         function field = angularSpectrumPropagation(obj, field, z)
             % Get complex input field and add padding.
@@ -454,6 +428,7 @@ classdef Sim < handle
         end
 
         %% PADDING METHODS
+
         function paddedField = addPadding(obj, field)
             % Adds zero-padding to the input field based on paddingRatio
             paddingSize = round(obj.paddingRatio * obj.samples);
@@ -481,6 +456,7 @@ classdef Sim < handle
         end
 
         %% UTILITY METHODS
+
         function wrappedPhi = wrap(~, phi)
             % Wrap phase to the range [-pi, pi]
             wrappedPhi = atan2(sin(phi), cos(phi));
@@ -527,19 +503,21 @@ classdef Sim < handle
             ax.YTick = [];
             ax.Box = 'off';
 
-            % Define common element height
+            % Define common element height and label offset
             elementHeight = 0.04;  % Consistent height for all elements
-            labelOffset = 0.02;    % Offset to improve label visibility
+            labelOffset = 0.02;    % Offset for labels
 
             % Initialize position tracker
             currentX = 0;
             componentCenters = []; % Store center positions for tick marks
 
-            % Iterate over elements and plot them
+            % Iterate over elements and update position first
             for i = 1:length(obj.elements)
+                % Update position based on the corresponding distance before plotting the element
+                currentX = currentX + obj.distances(i);
                 element = obj.elements{i};
 
-                % Determine shape based on element type
+                % Plot the element based on its type
                 switch lower(element.elementType)
                     case 'lens'
                         plotLens(currentX);
@@ -552,36 +530,26 @@ classdef Sim < handle
                         plotUnknown(currentX);
                 end
 
-                % Add label closer to the element
-                text(currentX, elementHeight / 2 + labelOffset, element.name, ...
-                    'HorizontalAlignment', 'center', ...
-                    'FontSize', 10, 'FontWeight', 'bold', 'Rotation', 45);
+                % Add a label above the element
+                text(currentX, elementHeight/2 + labelOffset, element.name, ...
+                    'HorizontalAlignment', 'center', 'FontSize', 10, ...
+                    'FontWeight', 'bold', 'Rotation', 45);
 
                 % Store component center position
                 componentCenters = [componentCenters, currentX];
-
-                % Move position forward by the corresponding distance (if not the last element)
-                if i < length(obj.distances)
-                    currentX = currentX + obj.distances(i);
-                end
             end
 
-            % Adjust axis limits to maximize plot area inside the figure
-            xlim([min(0, -2 * currentX), currentX + 2 * currentX]);
-            ylim([-0.05, 0.05]); % Zoomed out slightly to fit labels
+            % Adjust axis limits (unchanged settings)
+            xlim([min(0, -2*currentX), currentX + 2*currentX]);
+            ylim([-0.1, 0.1]);
 
-            % Draw thick black baseline at the bottom
+            % Draw a thick black baseline and tick marks with distance labels
             baselineY = -0.04;
-            plot([min(componentCenters), max(componentCenters)], [baselineY, baselineY], ...
-                'k', 'LineWidth', 2);
-
-            % Draw tick marks at component centers and label distances
-            tickHeight = 0.002; % Small vertical ticks
+            plot([min(componentCenters), max(componentCenters)], [baselineY, baselineY], 'k', 'LineWidth', 2);
+            tickHeight = 0.002;
             for i = 1:length(componentCenters)
                 xTick = componentCenters(i);
                 plot([xTick, xTick], [baselineY - tickHeight, baselineY + tickHeight], 'k', 'LineWidth', 2);
-
-                % Add distance labels between components
                 if i < length(componentCenters)
                     midX = (componentCenters(i) + componentCenters(i+1)) / 2;
                     text(midX, baselineY - 0.01, sprintf('%.3f m', obj.distances(i)), ...
@@ -589,31 +557,40 @@ classdef Sim < handle
                 end
             end
 
+            % --- Paraxial Ray Overlay ---
+            % Create a ParaxialSystem object from this Sim object and solve it.
+            parax = ParaxialSystem(obj);
+            parax = ParaxialSystem.solveSystem(parax);
+
+            % Compute the cumulative distances along the system.
+            dist = cumsum(parax.distances);
+
+            % Overlay the computed marginal and chief rays:
+            plot(dist, parax.marginalRay.heights*(elementHeight/max(2*parax.marginalRay.heights)), 'r', 'LineWidth', 1.2);  % Marginal ray (red)
+            plot(dist, parax.chiefRay.heights*(elementHeight/max(2*parax.chiefRay.heights)), 'b', 'LineWidth', 1.2);     % Chief ray (blue)
+
             hold off;
 
+            % --- Nested plotting functions ---
             function plotLens(x)
-                % Plot a lens as an ellipse with pointed ends
                 width = 0.005;
                 t = linspace(0, pi, 20);
                 X = [cos(t), -cos(t)] * width/2 + x;
-                Y = [sin(t), -sin(t)] * elementHeight / 2;
+                Y = [sin(t), -sin(t)] * elementHeight/2;
                 fill(X, Y, 'b', 'EdgeColor', 'k', 'LineWidth', 1.5);
             end
 
             function plotDiffuser(x)
-                % Plot a diffuser as a slim rectangle
                 width = 0.002;
                 rectangle('Position', [x - width/2, -elementHeight/2, width, elementHeight], ...
                     'FaceColor', 'g', 'EdgeColor', 'k', 'LineWidth', 1.5);
             end
 
             function plotPlane(x)
-                % Plot a plane as a vertical line with consistent height
                 plot([x, x], [-elementHeight/2, elementHeight/2], 'k', 'LineWidth', 2);
             end
 
             function plotUnknown(x)
-                % Plot unknown elements as a simple rectangle
                 width = 0.003;
                 rectangle('Position', [x - width/2, -elementHeight/2, width, elementHeight], ...
                     'FaceColor', 'r', 'EdgeColor', 'k', 'LineWidth', 1.5);
