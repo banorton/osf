@@ -84,13 +84,13 @@ classdef ParaxialSystem
         end
         
         function system = solveMarginal(system)
-            for i = 2:system.numPlanes-1
+            for i = 2:system.numPlanes
                 system.marginalRay.heights(i) = system.marginalRay.heights(i-1) + system.marginalRay.angles(i-1) * system.distances(i);
                 system.marginalRay.angles(i) = ((-system.marginalRay.heights(i) / system.focals(i)) + (system.RIs(i-1) * system.marginalRay.angles(i-1))) / system.RIs(i);
             end
             system.marginalRay.angles(end) = ((-system.marginalRay.heights(end) / system.focals(end)) + (system.RIs(end-1) * system.marginalRay.angles(end-1))) / system.RIs(end);
             system.imgPlaneDist = -system.marginalRay.heights(end-1) / system.marginalRay.angles(end-1);
-            system.distances(end) = system.imgPlaneDist;
+            % system.distances(end) = system.imgPlaneDist;
             
             system.apStopRatios = abs(system.marginalRay.heights ./ system.CAs);
             system.marginalRay.heights = system.marginalRay.heights * (1 / max(system.apStopRatios));

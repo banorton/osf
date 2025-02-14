@@ -91,10 +91,6 @@ classdef Sim < handle
                 error('Target index exceeds the number of elements in the system.');
             end
 
-            if verbose
-                field.disp('Initial Field');
-            end
-
             cumulativeDist = 0;
 
             % Loop through elements until target index is reached
@@ -120,7 +116,7 @@ classdef Sim < handle
 
                 if verbose
                     fprintf('Propagated to element %d (%s) at distance: %.3e m\n', i, obj.elements{i}.name, cumulativeDist);
-                    field.disp(sprintf('After element %d (%s)\nDist: %.3e m', i, obj.elements{i}.name, cumulativeDist));
+                    field.disp(sprintf('After element %d (%s)\nDist: %.0f mm', i, obj.elements{i}.name, 1000*cumulativeDist));
                 end
             end
         end
@@ -292,6 +288,10 @@ classdef Sim < handle
         %% PROPAGATION CALCULATION METHODS
 
         function field = angularSpectrumPropagation(obj, field, z)
+            if z == 0
+                return;
+            end
+
             % Get complex input field and add padding.
             u_in = obj.addPadding(field.getComplexField());
 
@@ -505,7 +505,7 @@ classdef Sim < handle
 
             % Define common element height and label offset
             elementHeight = 0.04;  % Consistent height for all elements
-            labelOffset = 0.02;    % Offset for labels
+            labelOffset = 0.015;    % Offset for labels
 
             % Initialize position tracker
             currentX = 0;
@@ -531,8 +531,8 @@ classdef Sim < handle
                 end
 
                 % Add a label above the element
-                text(currentX, elementHeight/2 + labelOffset, element.name, ...
-                    'HorizontalAlignment', 'center', 'FontSize', 10, ...
+                text(currentX+.005, elementHeight/2 + labelOffset, element.name, ...
+                    'HorizontalAlignment', 'center', 'FontSize', 12, ...
                     'FontWeight', 'bold', 'Rotation', 45);
 
                 % Store component center position
@@ -544,16 +544,16 @@ classdef Sim < handle
             ylim([-0.1, 0.1]);
 
             % Draw a thick black baseline and tick marks with distance labels
-            baselineY = -0.04;
+            baselineY = -0.03;
             plot([min(componentCenters), max(componentCenters)], [baselineY, baselineY], 'k', 'LineWidth', 2);
             tickHeight = 0.002;
             for i = 1:length(componentCenters)
                 xTick = componentCenters(i);
-                plot([xTick, xTick], [baselineY - tickHeight, baselineY + tickHeight], 'k', 'LineWidth', 2);
+                plot([xTick, xTick], [baselineY, baselineY + tickHeight], 'k', 'LineWidth', 2);
                 if i < length(componentCenters)
                     midX = (componentCenters(i) + componentCenters(i+1)) / 2;
-                    text(midX, baselineY - 0.01, sprintf('%.3f m', obj.distances(i)), ...
-                        'HorizontalAlignment', 'center', 'FontSize', 10);
+                    text(midX, baselineY - 0.01, sprintf('%.0f mm', obj.distances(i+1)*1000), ...
+                        'HorizontalAlignment', 'center', 'FontSize', 12, 'FontWeight', 'bold');
                 end
             end
 
@@ -566,8 +566,10 @@ classdef Sim < handle
             dist = cumsum(parax.distances);
 
             % Overlay the computed marginal and chief rays:
-            plot(dist, parax.marginalRay.heights*(elementHeight/max(2*parax.marginalRay.heights)), 'r', 'LineWidth', 1.2);  % Marginal ray (red)
-            plot(dist, parax.chiefRay.heights*(elementHeight/max(2*parax.chiefRay.heights)), 'b', 'LineWidth', 1.2);     % Chief ray (blue)
+            plot(dist, parax.marginalRay.heights*(0.8*elementHeight/max(2*abs(parax.marginalRay.heights))), 'r', 'LineWidth', 0.5);
+            plot(dist, -parax.marginalRay.heights*(0.8*elementHeight/max(2*abs(parax.marginalRay.heights))), 'r', 'LineWidth', 0.5);
+            plot(dist, parax.chiefRay.heights*(0.8*elementHeight/max(2*abs(parax.chiefRay.heights))), 'b', 'LineWidth', 0.5);
+            plot(dist, -parax.chiefRay.heights*(0.8*elementHeight/max(2*abs(parax.chiefRay.heights))), 'b', 'LineWidth', 0.5);
 
             hold off;
 
@@ -577,7 +579,7 @@ classdef Sim < handle
                 t = linspace(0, pi, 20);
                 X = [cos(t), -cos(t)] * width/2 + x;
                 Y = [sin(t), -sin(t)] * elementHeight/2;
-                fill(X, Y, 'b', 'EdgeColor', 'k', 'LineWidth', 1.5);
+                fill(X, Y, [.8 .8 .8], 'EdgeColor', 'k', 'LineWidth', 2);
             end
 
             function plotDiffuser(x)
@@ -595,6 +597,21 @@ classdef Sim < handle
                 rectangle('Position', [x - width/2, -elementHeight/2, width, elementHeight], ...
                     'FaceColor', 'r', 'EdgeColor', 'k', 'LineWidth', 1.5);
             end
+        end
+
+        function print(obj)
+            %PRINT Prints simulation parameters in a nicely formatted manner.
+
+            fprintf('\nSim Parameters:\n');
+            fprintf('-------------------------------\n');
+            fprintf('  Elements:       %d element(s)\n', numel(obj.elements));
+            fprintf('  Distances:      %s\n', mat2str(obj.distances));
+            fprintf('  Resolution:     %.6f m\n', obj.resolution);
+            fprintf('  Field Length:   %.6f m\n', obj.fieldLength);
+            fprintf('  Samples:        %d\n', obj.samples);
+            fprintf('  Dimensionality: %d\n', obj.dim);
+            fprintf('  Wavelength:     %.6e m\n', obj.lambda);
+            fprintf('  Padding Ratio:  %.2f\n\n', obj.paddingRatio);
         end
 
     end

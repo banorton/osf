@@ -123,13 +123,13 @@ classdef Field
             end
         end
 
-        function disp(obj, titleName)
+        function fig = disp(obj, titleName)
             % Display the amplitude and phase of the field
             if nargin < 2
                 titleName = "";
             end
 
-            fig = figure('Position', [657 76 486 846]);
+            fig = figure('Position', [794 145 391 725]);
 
             if obj.dim == 1
                 samples = length(obj.amplitude);
@@ -179,7 +179,8 @@ classdef Field
             end
 
             if titleName ~= ""
-                sgtitle(titleName, 'FontSize', 18, 'FontWeight', 'bold');
+                st = sgtitle(titleName, 'FontSize', 18, 'FontWeight', 'bold');
+                st.Tag = 'text';
             end
 
             % Apply theme
@@ -230,7 +231,7 @@ classdef Field
             end
 
             % Create figure
-            fig = figure('Position', [657 76 486 846]);
+            fig = figure('Position', [399 365 1109 328]);
 
             % Plot phase cross-section
             plot(xAxis, unwrap(phaseData), 'LineWidth', 1.5);
@@ -337,7 +338,7 @@ classdef Field
             % Applies a consistent theme to a figure with a black background,
             % white text, and appropriate formatting.
 
-            if nargin < 1
+            if nargin < 2
                 fig = gcf; % Use current figure if none is specified
             end
 
@@ -360,6 +361,12 @@ classdef Field
             for i = 1:length(textObjs)
                 textObjs(i).Color = 'white';  % Change text color
                 textObjs(i).FontWeight = 'bold';
+            end
+
+            % Also set sgtitle objects (which have the Tag 'sgTitle') to white.
+            sgObjs = findall(fig, 'Tag', 'text');
+            for i = 1:length(sgObjs)
+                sgObjs(i).Color = 'white';
             end
 
             % Apply to colorbars if present
