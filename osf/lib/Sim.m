@@ -552,7 +552,7 @@ classdef Sim < handle
                 plot([xTick, xTick], [baselineY, baselineY + tickHeight], 'k', 'LineWidth', 2);
                 if i < length(componentCenters)
                     midX = (componentCenters(i) + componentCenters(i+1)) / 2;
-                    text(midX, baselineY - 0.01, sprintf('%.0f mm', obj.distances(i+1)*1000), ...
+                    text(midX, baselineY - 0.01, sprintf('%.0fmm', obj.distances(i+1)*1000), ...
                         'HorizontalAlignment', 'center', 'FontSize', 12, 'FontWeight', 'bold');
                 end
             end
@@ -600,17 +600,21 @@ classdef Sim < handle
         end
 
         function print(obj)
-            %PRINT Prints simulation parameters in a nicely formatted manner.
+            % PRINT Prints simulation parameters.
+            distances_mm    = round(obj.distances * 1e3);
+            fieldLength_mm  = round(obj.fieldLength * 1e3);
+            resolution_um   = round(obj.resolution * 1e6);
+            lambda_nm       = round(obj.lambda * 1e9);
 
             fprintf('\nSim Parameters:\n');
             fprintf('-------------------------------\n');
             fprintf('  Elements:       %d element(s)\n', numel(obj.elements));
-            fprintf('  Distances:      %s\n', mat2str(obj.distances));
-            fprintf('  Resolution:     %.6f m\n', obj.resolution);
-            fprintf('  Field Length:   %.6f m\n', obj.fieldLength);
+            fprintf('  Distances:      %s mm\n', mat2str(distances_mm));
+            fprintf('  Resolution:     %d um\n', resolution_um);
+            fprintf('  Field Length:   %d mm\n', fieldLength_mm);
             fprintf('  Samples:        %d\n', obj.samples);
             fprintf('  Dimensionality: %d\n', obj.dim);
-            fprintf('  Wavelength:     %.6e m\n', obj.lambda);
+            fprintf('  Wavelength:     %d nm\n', lambda_nm);
             fprintf('  Padding Ratio:  %.2f\n\n', obj.paddingRatio);
         end
 

@@ -80,7 +80,6 @@ classdef ParaxialSystem
         function system = solveSystem(system)
             system = ParaxialSystem.solveMarginal(system);
             system = ParaxialSystem.solveChief(system);
-            ParaxialSystem.printSystem(system);
         end
         
         function system = solveMarginal(system)

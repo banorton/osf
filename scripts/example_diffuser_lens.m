@@ -13,6 +13,10 @@ sim = Sim(1e-6, 1e-3, 'paddingRatio', 2, 'lambda', 532e-9, 'dim', 2);
 roughness = 30e-6; coherence_length = 20e-6;
 sim.addDiffuser(0, roughness, coherence_length, 'name', 'Diffuser');
 
+% A lens is also added at 0mm from the origin, but the diffuser will be
+% applied to the propagating field first and then the lens.
+sim.addLens(0, 10e-3, 'name', 'Lens 1');
+
 % Add a detector plane 10mm from the lens so we can see what it looks like
 % after propagating for a bit.
 sim.addPlane(10e-3, 'name', 'Detector');
@@ -28,7 +32,11 @@ sim.print();
 % simulation so you don't have to do it manually. Then you can directly
 % send the field into the simulation.
 field = sim.newField();
-sim.prop(field, 'verbose', true);
+
+% Send the fireld through the system. The optional 'verbose' setting
+% causes the simulation to display the amplitude and phase of the field
+% after every element in the system.
+field = sim.prop(field, 'verbose', true);
 
 %%
 import_dir("../osf/lib", "unload");
