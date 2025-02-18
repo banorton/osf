@@ -187,6 +187,57 @@ classdef Field
             obj.applyTheme(fig);
         end
 
+        function amplitudeCross(obj, varargin)
+            % amplitudeCross Plots the cross section of the amplitude of the field.
+            %   By default, it plots along the x-axis at the middle.
+            %   Optional inputs:
+            %       'axis' - 'x' (default) or 'y'
+            %       'pos'  - row or column index (default: middle)
+
+            p = inputParser;
+            addParameter(p, 'axis', 'x', @(x) ischar(x) && ismember(x, {'x', 'y'}));
+            addParameter(p, 'pos', [], @(x) isnumeric(x) && isscalar(x));
+            parse(p, varargin{:});
+
+            axisType = p.Results.axis;
+            pos = p.Results.pos;
+
+            if obj.dim == 1
+                xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, length(obj.amplitude));
+                amplitudeData = obj.amplitude;
+            elseif obj.dim == 2
+                [rows, cols] = size(obj.amplitude);
+                if isempty(pos)
+                    pos = round((axisType == 'x') * rows/2 + (axisType == 'y') * cols/2);
+                end
+
+                if axisType == 'x'
+                    if pos < 1 || pos > rows
+                        error('Position out of bounds for x-axis cross-section.');
+                    end
+                    xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, cols);
+                    amplitudeData = obj.amplitude(pos, :);
+                else
+                    if pos < 1 || pos > cols
+                        error('Position out of bounds for y-axis cross-section.');
+                    end
+                    xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, rows);
+                    amplitudeData = obj.amplitude(:, pos);
+                end
+            else
+                error('Dimensionality must be either 1 or 2.');
+            end
+
+            fig = figure('Position', [399 365 1109 328]);
+            plot(xAxis, amplitudeData, 'LineWidth', 1.5);
+            xlabel('Position (m)');
+            ylabel('Amplitude');
+            title(sprintf('Amplitude Cross-section (%s-axis, pos = %d)', axisType, pos));
+            grid off;
+
+            obj.applyTheme(fig);
+        end
+
         function phaseCross(obj, varargin)
             % Plots the cross section of the phase of the field
             % Default is along the x-axis at the middle

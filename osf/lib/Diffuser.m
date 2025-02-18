@@ -48,5 +48,16 @@ classdef Diffuser < Element
             end
         end
 
+        function print(obj)
+            % PRINT Prints simulation parameters.
+            roughness_um           = obj.roughness * 1e6;
+            correlation_length_um  = obj.correlation_length * 1e6;
+
+            fprintf('\nDiffuser Parameters:\n');
+            fprintf('-------------------------------\n');
+            fprintf('  Surface Roughness:       %.2f um\n', roughness_um);
+            fprintf('  Correlation Length:      %.2f um\n', correlation_length_um);
+        end
+
     end
 end

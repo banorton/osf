@@ -12,7 +12,7 @@ sim = Sim(.5e-6, 1e-3, 'paddingRatio', 2, 'lambda', 532e-9, 'dim', 2);
 roughness = 30e-6; coherence_length = 20e-6;
 
 % Add elements to the system.
-sim.addPlane(0, 'name', 'Source')
+sim.addPlane(0, 'name', '')
 sim.addLens(0, 100e-3, 'name', 'f = 100mm');
 sim.addDiffuser(99e-3, roughness, coherence_length, 'name', 'Diffuser');
 sim.addLens(101e-3, 100e-3, 'name', 'f = 100mm');
@@ -23,6 +23,7 @@ sim.disp();
 
 % Print the simulation parameters in the console.
 sim.print();
+sim.elements{3}.print();
 
 % Propagate the field through the system.
 sim.prop(sim.newField(), 'verbose', true);

@@ -13,7 +13,7 @@ sim.addPlane(0, 'name', 'Source');
 sim.addLens(20e-3, 10e-3, 'name', 'f = 10mm');
 sim.addPlane(10e-3, 'name', 'Focal Plane');
 sim.addAperture(0, 'name', '6um Pinhole', 'circ', 6e-6);
-sim.addLens(10e-3, -10e-3, 'name', 'f = -10mm');
+sim.addLens(10e-3, 10e-3, 'name', 'f = 10mm');
 sim.addPlane(20e-3, 'name', 'Detector');
 
 % Show a ray optics diagram of the system.

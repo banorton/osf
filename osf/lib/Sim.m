@@ -303,7 +303,6 @@ classdef Sim < handle
             % Frequency axis computation.
             fx = (-Nx/2:Nx/2-1) / (Nx * dx);
             fy = (-Ny/2:Ny/2-1) / (Ny * dy);
-            [FX, FY] = meshgrid(fx, fy);
             [FX_sqr, FY_sqr] = meshgrid(fx.^2, fy.^2);
 
             % Compute longitudinal wavevector component k_z.
@@ -344,84 +343,6 @@ classdef Sim < handle
             ftu = ftu .* kernel;
             uout_padded = ifft(ifftshift(ftu));
 
-            uout = obj.removePadding(uout_padded);
-
-            field = field.setComplexField(uout);
-        end
-
-        function field = rayleighSommerfeldPropagation(obj, field, z)
-            % Rayleigh-Sommerfeld Propagation with Evanescent Waves (2D)
-            if z == 0
-                field = field.setComplexField(field.getComplexField());
-                return;
-            end
-
-            dx = obj.resolution;  % Spatial sampling interval
-            n0 = 1;  % Background refractive index
-            lambda = obj.lambda;  % Wavelength
-            k = 2 * pi / lambda * n0;  % Wavenumber
-
-            uin = field.getComplexField();
-            uin_padded = obj.addPadding(uin);
-            [Ny, Nx] = size(uin_padded);
-
-            % Generate spatial frequency grid
-            dkx = 2 * pi / (Nx * dx);
-            dky = 2 * pi / (Ny * dx);
-            kx = (-Nx/2:Nx/2-1) * dkx;
-            ky = (-Ny/2:Ny/2-1) * dky;
-            [KX, KY] = meshgrid(kx, ky);
-
-            % Compute kz (propagation term) with evanescent component
-            K2 = KX.^2 + KY.^2;
-            k_z = sqrt(k^2 - K2);  % Standard propagation term
-
-            % Handle evanescent waves (imaginary k_z)
-            evanescent_mask = K2 > k^2;
-            k_z(evanescent_mask) = 1i * sqrt(K2(evanescent_mask) - k^2);  % Decay in z
-
-            % Compute transfer function including evanescent waves
-            H = exp(1i * k_z * z);  % Phase term for propagating waves
-            H(evanescent_mask) = exp(-abs(k_z(evanescent_mask)) * z);  % Exponential decay for evanescent waves
-
-            % Apply propagation in Fourier domain
-            Uin_FT = fftshift(fft2(uin_padded));
-            Uout_FT = Uin_FT .* H;
-            uout_padded = ifft2(ifftshift(Uout_FT));
-
-            % Remove padding and update the field
-            uout = obj.removePadding(uout_padded);
-            field = field.setComplexField(uout);
-        end
-
-        function field = rayleighSommerfeldPropagation1D(obj, field, z)
-            % Rayleigh-Sommerfeld Propagation (1D)
-            if z == 0
-                field = field.setComplexField(field.getComplexField());
-                return;
-            end
-
-            dx = obj.resolution;
-            n0 = 1;
-            k = 2 * pi / obj.lambda * n0;
-            uin = field.getComplexField();
-
-            % Pad the input field
-            uin_padded = obj.addPadding(uin);
-            Nx = length(uin_padded);
-
-            xkernel = (-Nx / 2 : Nx / 2 - 1) * dx;
-            r = sqrt(xkernel.^2 + z^2);
-
-            % Rayleigh-Sommerfeld Kernel for propagation in 1D
-            if z > 0
-                kernel = (2 * pi)^-1 * exp(1i * k * r) ./ r .* (1 - 1i * k * r);
-            else
-                kernel = conj((2 * pi)^-1 * exp(1i * k * r) ./ r .* (1 - 1i * k * r));
-            end
-
-            % Perform convolution in the spectrum domain
-            uout_padded = ifft(fft(uin_padded) .* fft(kernel)) * dx * dx;
             uout = obj.removePadding(uout_padded);
 
             field = field.setComplexField(uout);
@@ -600,22 +521,39 @@ classdef Sim < handle
         end
 
         function print(obj)
-            % PRINT Prints simulation parameters.
-            distances_mm    = round(obj.distances * 1e3);
-            fieldLength_mm  = round(obj.fieldLength * 1e3);
-            resolution_um   = round(obj.resolution * 1e6);
-            lambda_nm       = round(obj.lambda * 1e9);
+            % PRINT Prints simulation parameters in a nicely formatted manner.
+            %   Length measurements are converted to mm (or um for resolution)
+            %   with no digits after the decimal, and element names are printed in a 
+            %   bracketed list. If an element's name is empty, its type is used instead.
+
+            distances_mm   = round(obj.distances * 1e3);
+            fieldLength_mm = round(obj.fieldLength * 1e3);
+            resolution_um  = round(obj.resolution * 1e6);
+            lambda_nm      = round(obj.lambda * 1e9);
+
+            % Build a cell array of element names (or types if name is empty)
+            numEl = numel(obj.elements);
+            names = cell(1, numEl);
+            for k = 1:numEl
+                if isempty(obj.elements{k}.name)
+                    names{k} = obj.elements{k}.elementType;
+                else
+                    names{k} = obj.elements{k}.name;
+                end
+            end
+            % Join names with a comma and enclose in square brackets
+            elementsStr = ['[', strjoin(names, ', '), ']'];
 
             fprintf('\nSim Parameters:\n');
             fprintf('-------------------------------\n');
-            fprintf('  Elements:       %d element(s)\n', numel(obj.elements));
+            fprintf('  Elements:       %s\n', elementsStr);
             fprintf('  Distances:      %s mm\n', mat2str(distances_mm));
             fprintf('  Resolution:     %d um\n', resolution_um);
             fprintf('  Field Length:   %d mm\n', fieldLength_mm);
             fprintf('  Samples:        %d\n', obj.samples);
             fprintf('  Dimensionality: %d\n', obj.dim);
             fprintf('  Wavelength:     %d nm\n', lambda_nm);
-            fprintf('  Padding Ratio:  %.2f\n\n', obj.paddingRatio);
+            fprintf('  Padding Ratio:  %.1f\n\n', obj.paddingRatio);
         end
 
     end
