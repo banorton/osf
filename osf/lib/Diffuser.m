@@ -38,16 +38,14 @@ classdef Diffuser < Element
         end
 
         function field = apply(obj, field)
-            if ~isempty(obj.phaseFunction)
-                if obj.dim == 2
-                    phaseShift = obj.phaseFunction(size(field.phase), field.resolution, field.lambda);
-                elseif obj.dim == 1
-                    phaseShift = obj.phaseFunction(size(field.phase), field.resolution, field.lambda);
-                else
-                    error('Unsupported dimensionality in element.');
-                end
-                field.phase = obj.wrap(field.phase + phaseShift);
+            if obj.dim == 2
+                phaseShift = obj.phaseFunction(size(field.phase), field.resolution, field.lambda);
+            elseif obj.dim == 1
+                phaseShift = obj.phaseFunction(size(field.phase), field.resolution, field.lambda);
+            else
+                error('Unsupported dimensionality in element.');
             end
+            field.phase = obj.wrap(field.phase + phaseShift);
 
             if ~strcmp(obj.apertureType, 'none')
                 field = obj.applyAperture(field);
