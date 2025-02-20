@@ -8,18 +8,18 @@ classdef Diffuser < Element
         dim            % Dimensionality of the element (1 or 2)
 
         roughness           % RMS roughness in meters
-        correlation_length  % Correlation length in meters
+        correlationLength  % Correlation length in meters
     end
 
     methods
 
-        function obj = Diffuser(roughness, correlation_length, varargin)
+        function obj = Diffuser(roughness, correlationLength, varargin)
             p = inputParser;
             addParameter(p, 'name', '', @ischar);
             addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
             addRequired(p, 'roughness', @isnumeric);
             addRequired(p, 'correlation_length', @isnumeric);
-            parse(p, roughness, correlation_length, varargin{:});
+            parse(p, roughness, correlationLength, varargin{:});
 
             obj.elementType = 'diffuser';
             obj.apertureType = 'none';
@@ -27,8 +27,8 @@ classdef Diffuser < Element
             obj.name = p.Results.name;
             obj.dim = p.Results.dim;
             obj.roughness = roughness;
-            obj.correlation_length = correlation_length;
-            obj.phaseFunction = @(sz, res, lambda) imgaussfilt(2 * pi / lambda * obj.roughness * randn(sz), obj.correlation_length / res);
+            obj.correlationLength = correlationLength;
+            obj.phaseFunction = @(sz, res, lambda) imgaussfilt(2 * pi / lambda * obj.roughness * randn(sz), obj.correlationLength / res);
         end
 
         function field = apply(obj, field)
@@ -51,7 +51,7 @@ classdef Diffuser < Element
         function print(obj)
             % PRINT Prints simulation parameters.
             roughness_um           = obj.roughness * 1e6;
-            correlation_length_um  = obj.correlation_length * 1e6;
+            correlation_length_um  = obj.correlationLength * 1e6;
 
             fprintf('\nDiffuser Parameters:\n');
             fprintf('-------------------------------\n');

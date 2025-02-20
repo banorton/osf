@@ -23,7 +23,7 @@ sim.disp();
 sim.print();
 
 % Create field with a phase rectangle of width 0.2mm and a phase shift of pi.
-field = sim.newField().applyPhaseRect(.2e-3, pi);
+field = sim.newField().addPhaseRect(.2e-3, pi);
 
 % Propagate the field through the system.
 sim.prop(field, 'verbose', true);

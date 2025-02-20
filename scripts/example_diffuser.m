@@ -10,8 +10,8 @@ sim = Sim(1e-6, 1e-3, 'paddingRatio', 2, 'lambda', 532e-9, 'dim', 2);
 
 % The properties of the diffuser are defined and it is added to the system
 % 0mm away from the origin.
-roughness = 30e-6; coherence_length = 20e-6;
-sim.addDiffuser(0, roughness, coherence_length, 'name', 'Diffuser');
+roughness = 30e-6; correlationLength = 20e-6;
+sim.addDiffuser(0, roughness, correlationLength, 'name', 'Diffuser');
 
 % Add a detector plane 10mm from the lens so we can see what it looks like
 % after propagating for a bit.

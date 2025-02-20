@@ -51,22 +51,22 @@ classdef Sim < handle
             obj.distances(end+1) = dist;
         end
 
-        function addLens(obj, dist, focalLength, varargin)
+        function lens = addLens(obj, dist, focalLength, varargin)
             lens = Lens(focalLength, 'dim', obj.dim, varargin{:});
             obj.addElement(dist, lens);
         end
 
-        function addDiffuser(obj, dist, roughness, correlation_length, varargin)
-            diffuser = Diffuser(roughness, correlation_length, 'dim', obj.dim, varargin{:});
+        function diffuser = addDiffuser(obj, dist, roughness, correlationLength, varargin)
+            diffuser = Diffuser(roughness, correlationLength, 'dim', obj.dim, varargin{:});
             obj.addElement(dist, diffuser);
         end
 
-        function addAperture(obj, dist, varargin)
+        function aperture = addAperture(obj, dist, varargin)
             aperture = Aperture('dim', obj.dim, varargin{:});
             obj.addElement(dist, aperture);
         end
 
-        function addPlane(obj, dist, varargin)
+        function plane = addPlane(obj, dist, varargin)
             plane = Plane('dim', obj.dim, varargin{:});
             obj.addElement(dist, plane);
         end
@@ -117,6 +117,7 @@ classdef Sim < handle
                 if verbose
                     fprintf('Propagated to element %d (%s) at distance: %.3e m\n', i, obj.elements{i}.name, cumulativeDist);
                     field.disp(sprintf('After element %d (%s)\nDist: %.0f mm', i, obj.elements{i}.name, 1000*cumulativeDist));
+                    pause(.001);
                 end
             end
         end
@@ -169,6 +170,7 @@ classdef Sim < handle
                 if verbose
                     fprintf('Propagated to distance: %.3e m\n', currDist);
                     field.disp(sprintf('Final Field\nDist: %.3e m', currDist));
+                    pause(.001);
                 end
             end
         end
@@ -213,6 +215,7 @@ classdef Sim < handle
                     if verbose
                         fprintf('Propagated to distance: %.3e m (no elements present)\n', currDist);
                         field.disp('Field after propagation (no elements)');
+                        pause(.001);
                     end
                 end
                 return;
@@ -249,6 +252,7 @@ classdef Sim < handle
                 if verbose
                     fprintf('Propagated remaining distance to target: %.3e m\n', currDist);
                     field.disp('Field after propagation to target distance');
+                    pause(.001);
                 end
             end
         end
@@ -282,6 +286,7 @@ classdef Sim < handle
                 cumulativeDist = sum(obj.distances(1:elementIndex));
                 fprintf('Finished propagating to element named: %s at distance: %.3e m\n', targetName, cumulativeDist);
                 field.disp(sprintf('Field after propagation to element (%s), Distance: %.3e m', targetName, cumulativeDist));
+                pause(.001);
             end
         end
 
@@ -293,10 +298,10 @@ classdef Sim < handle
             end
 
             % Get complex input field and add padding.
-            u_in = obj.addPadding(field.getComplexField());
+            u_out = obj.addPadding(field.getComplexField());
 
             % Parameters for propagation.
-            [Nx, Ny] = size(u_in);
+            [Nx, Ny] = size(u_out);
             dx = obj.resolution; dy = obj.resolution;
             lambda = obj.lambda;
 
@@ -306,20 +311,22 @@ classdef Sim < handle
             [FX_sqr, FY_sqr] = meshgrid(fx.^2, fy.^2);
 
             % Compute longitudinal wavevector component k_z.
-            k = 2 * pi / lambda;
             k_z = 2 * pi * sqrt((1 / lambda^2) - FX_sqr - FY_sqr);
+            clear FX_sqr FY_sqr;
 
             % Compute transfer function.
             H = exp(1i * k_z * z);
+            clear k_z;
 
             % Find the angular spectrum.
-            angular_spectrum_in = fftshift(fft2(u_in));
+            u_out = fftshift(fft2(u_out));
 
             % Propagate the angular spectrum using the transfer function.
-            angular_spectrum_out = angular_spectrum_in .* H;
+            u_out = u_out .* H;
 
             % Inverse Fourier transform to get the propagated field.
-            u_out = obj.removePadding(ifft2(ifftshift(angular_spectrum_out)));
+            u_out = obj.removePadding(ifft2(ifftshift(u_out)));
+
             field = field.setComplexField(u_out);
         end
 
@@ -518,6 +525,9 @@ classdef Sim < handle
                 rectangle('Position', [x - width/2, -elementHeight/2, width, elementHeight], ...
                     'FaceColor', 'r', 'EdgeColor', 'k', 'LineWidth', 1.5);
             end
+
+            % To make sure the disp shows before some other process starts running.
+            pause(.001);
         end
 
         function print(obj)

@@ -25,7 +25,7 @@ sim.print();
 
 % Add a rectangular phase object with a phase shift of pi to the field.
 rect_width = .2e-3;
-field = sim.newField().applyPhaseRect(rect_width, pi);
+field = sim.newField().addPhaseRect(rect_width, pi);
 
 % Send the fireld through the system. The optional 'verbose' setting
 % causes the simulation to display the amplitude and phase of the field

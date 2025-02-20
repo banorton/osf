@@ -52,20 +52,20 @@ classdef Field
             obj.phase = zeros(size(obj.phase));
         end
 
-        function obj = applyPhaseShift(obj, phaseShift)
-            % Apply a global phase shift
+        function obj = addPhaseShift(obj, phaseShift)
+            % Add a global phase shift
             obj.phase = obj.phase + phaseShift;
         end
 
-        function obj = applyAmplitudeMask(obj, mask)
-            % Apply an amplitude mask to the field
+        function obj = addAmplitudeMask(obj, mask)
+            % Add an amplitude mask to the field
             if ~isequal(size(obj.amplitude), size(mask))
                 error('Size of mask must match the size of the field amplitude.');
             end
             obj.amplitude = obj.amplitude .* mask;
         end
 
-        function obj = applyPhaseRect(obj, rect_size, phase_shift)
+        function obj = addPhaseRect(obj, rect_size, phase_shift)
             % Create a rectangle shaped phase shift at the center of the
             % field of a specified size
             if obj.dim == 1
@@ -92,6 +92,51 @@ classdef Field
                 end_y = min(size(obj.phase, 1), middle_y + rect_half_height);
 
                 obj.phase(start_y:end_y, start_x:end_x) = obj.phase(start_y:end_y, start_x:end_x) + phase_shift;
+            else
+                error('Dimensionality must be either 1 or 2.');
+            end
+        end
+
+        function obj = addAmplitudeRect(obj, rect_size, amplitude_change)
+            % addAmplitudeRect Applies a rectangular amplitude change at the center
+            % of the field.
+            % For 1D fields, it adjusts a segment of the amplitude array.
+            % For 2D fields, it adjusts a rectangular region.
+            %
+            % Inputs:
+            %   rect_size         - Size of the rectangle (scalar for 1D or 2D square,
+            %                       or [width, height] for a 2D rectangle)
+            %   amplitude_change  - The value to add to the amplitude in the specified region.
+            %
+            % Example:
+            %   field = field.addAmplitudeRect(0.005, 0.2);
+
+            if obj.dim == 1
+                rect_half_samples = round((rect_size / 2) / obj.resolution);
+                middle = round(length(obj.amplitude) / 2);
+                start_idx = max(1, middle - rect_half_samples);
+                end_idx = min(length(obj.amplitude), middle + rect_half_samples);
+                obj.amplitude(start_idx:end_idx) = obj.amplitude(start_idx:end_idx) + amplitude_change;
+            elseif obj.dim == 2
+                if isscalar(rect_size)
+                    rect_half_width = round((rect_size / 2) / obj.resolution);
+                    rect_half_height = rect_half_width;
+                elseif isvector(rect_size)
+                    rect_half_width = round((rect_size(1) / 2) / obj.resolution);
+                    rect_half_height = round((rect_size(2) / 2) / obj.resolution);
+                else
+                    error('rect_size must be a scalar or a two-element vector for 2D fields.');
+                end
+
+                middle_x = round(size(obj.amplitude, 2) / 2);
+                middle_y = round(size(obj.amplitude, 1) / 2);
+
+                start_x = max(1, middle_x - rect_half_width);
+                end_x = min(size(obj.amplitude, 2), middle_x + rect_half_width);
+                start_y = max(1, middle_y - rect_half_height);
+                end_y = min(size(obj.amplitude, 1), middle_y + rect_half_height);
+
+                obj.amplitude(start_y:end_y, start_x:end_x) = obj.amplitude(start_y:end_y, start_x:end_x) + amplitude_change;
             else
                 error('Dimensionality must be either 1 or 2.');
             end
@@ -293,6 +338,107 @@ classdef Field
 
             % Apply theme
             obj.applyTheme(fig);
+        end
+
+        function cross(obj, varargin)
+            % CROSS Displays the amplitude and phase cross sections of a 2D field.
+            %
+            % This function is defined only for 2D fields. It displays two subplots:
+            % the amplitude cross section (top) and the phase cross section (bottom).
+            %
+            % Optional name/value pairs:
+            %   'display' - 'both' (default), 'amplitude', or 'phase'
+            %   'axis'    - 'x' (default) or 'y'
+            %   'pos'     - row or column index for the cross section (default: center)
+
+            if obj.dim ~= 2
+                error('cross is defined only for 2D fields.');
+            end
+
+            p = inputParser;
+            addParameter(p, 'display', 'both', @(x) ischar(x) && ismember(lower(x), {'both','amplitude','phase'}));
+            addParameter(p, 'axis', 'x', @(x) ischar(x) && ismember(lower(x), {'x','y'}));
+            addParameter(p, 'pos', [], @(x) isnumeric(x) && isscalar(x));
+            parse(p, varargin{:});
+
+            displayChoice = lower(p.Results.display);
+            axisType = lower(p.Results.axis);
+            pos = p.Results.pos;
+
+            % Set default pos value if not provided
+            [rows, cols] = size(obj.amplitude);
+            if isempty(pos)
+                if strcmp(axisType, 'x')
+                    pos = round(rows/2);
+                else
+                    pos = round(cols/2);
+                end
+            end
+
+            % Create a new figure sized to display two subplots comfortably.
+            fig = figure('Position', [399 365 1109 656]);
+
+            switch displayChoice
+                case 'both'
+                    % Top subplot: Amplitude cross section.
+                    subplot(2,1,1);
+                    [xAxis_amp, amplitudeData] = getAmplitudeCross(obj, axisType, pos);
+                    plot(xAxis_amp, amplitudeData, 'LineWidth', 1.5);
+                    xlabel('Position (m)');
+                    ylabel('Amplitude');
+                    title(sprintf('Amplitude Cross-section (%s-axis, pos = %d)', axisType, pos));
+                    grid off;
+
+                    % Bottom subplot: Phase cross section.
+                    subplot(2,1,2);
+                    [xAxis_phase, phaseData] = getPhaseCross(obj, axisType, pos);
+                    plot(xAxis_phase, unwrap(phaseData), 'LineWidth', 1.5);
+                    xlabel('Position (m)');
+                    ylabel('Phase (radians)');
+                    title(sprintf('Phase Cross-section (%s-axis, pos = %d)', axisType, pos));
+                    grid off;
+
+                case 'amplitude'
+                    [xAxis_amp, amplitudeData] = getAmplitudeCross(obj, axisType, pos);
+                    plot(xAxis_amp, amplitudeData, 'LineWidth', 1.5);
+                    xlabel('Position (m)');
+                    ylabel('Amplitude');
+                    title(sprintf('Amplitude Cross-section (%s-axis, pos = %d)', axisType, pos));
+                    grid off;
+
+                case 'phase'
+                    [xAxis_phase, phaseData] = getPhaseCross(obj, axisType, pos);
+                    plot(xAxis_phase, unwrap(phaseData), 'LineWidth', 1.5);
+                    xlabel('Position (m)');
+                    ylabel('Phase (radians)');
+                    title(sprintf('Phase Cross-section (%s-axis, pos = %d)', axisType, pos));
+                    grid off;
+            end
+
+            % Apply the theme to the figure.
+            obj.applyTheme(fig);
+
+            % Helper function: getAmplitudeCross (assumes obj.dim == 2)
+            function [xAxis, amplitudeData] = getAmplitudeCross(obj, axisType, pos)
+                if strcmp(axisType, 'x')
+                    xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, size(obj.amplitude,2));
+                    amplitudeData = obj.amplitude(pos, :);
+                else  % axisType == 'y'
+                    xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, size(obj.amplitude,1));
+                    amplitudeData = obj.amplitude(:, pos);
+                end
+            end
+
+            % Helper function: getPhaseCross (assumes obj.dim == 2)
+            function [xAxis, phaseData] = getPhaseCross(obj, axisType, pos)
+                if strcmp(axisType, 'x')
+                    xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, size(obj.phase,2));
+                    phaseData = obj.phase(pos, :);
+                else  % axisType == 'y'
+                    xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, size(obj.phase,1));
+                    phaseData = obj.phase(:, pos);
+                end
+            end
         end
 
         function dispWDF(obj)
