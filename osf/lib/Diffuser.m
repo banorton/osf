@@ -1,13 +1,12 @@
 classdef Diffuser < Element
     properties
         name           % Name of the optical element
-        phaseFunction  % Function handle for phase modification (if applicable)
         elementType    % Type of optical element (e.g., 'plane', 'lens', 'custom')
         apertureType   % Type of aperture ('none', 'circ', 'rect', '1D-aperture')
         apertureParams % Parameters for defining the aperture (radius, length, width, etc.)
         dim            % Dimensionality of the element (1 or 2)
 
-        roughness           % RMS roughness in meters
+        roughness          % RMS roughness in meters
         correlationLength  % Correlation length in meters
     end
 
@@ -18,7 +17,7 @@ classdef Diffuser < Element
             addParameter(p, 'name', '', @ischar);
             addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
             addRequired(p, 'roughness', @isnumeric);
-            addRequired(p, 'correlation_length', @isnumeric);
+            addRequired(p, 'correlationLength', @isnumeric);
             parse(p, roughness, correlationLength, varargin{:});
 
             obj.elementType = 'diffuser';
@@ -28,7 +27,14 @@ classdef Diffuser < Element
             obj.dim = p.Results.dim;
             obj.roughness = roughness;
             obj.correlationLength = correlationLength;
-            obj.phaseFunction = @(sz, res, lambda) imgaussfilt(2 * pi / lambda * obj.roughness * randn(sz), obj.correlationLength / res);
+        end
+
+        function phaseShift = phaseFunction(obj, sz, res, lambda)
+            if obj.roughness == 0 || obj.correlationLength == 0
+                phaseShift = 0;
+            else
+                phaseShift = imgaussfilt(2*pi/lambda * obj.roughness * randn(sz), obj.correlationLength/res);
+            end
         end
 
         function field = apply(obj, field)

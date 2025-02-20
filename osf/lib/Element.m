@@ -3,7 +3,6 @@ classdef (Abstract) Element < handle
 
     properties (Abstract)
         name           % Name of the optical element
-        phaseFunction  % Function handle for phase modification (if applicable)
         elementType    % Type of optical element (e.g., 'plane', 'lens', 'custom')
         apertureType   % Type of aperture ('none', 'circ', 'rect', etc.)
         apertureParams % Parameters for defining the aperture (radius, length, width, etc.)
@@ -11,7 +10,8 @@ classdef (Abstract) Element < handle
     end
 
     methods (Abstract)
-        apply(field);
+        apply
+        phaseFunction
     end
 
     methods

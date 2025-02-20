@@ -1,7 +1,6 @@
 classdef Plane < Element
     properties
         name           % Name of the optical element
-        phaseFunction  % Function handle for phase modification (if applicable)
         elementType    % Type of optical element (e.g., 'plane', 'lens', 'custom')
         apertureType   % Type of aperture ('none', 'circ', 'rect', '1D-aperture')
         apertureParams % Parameters for defining the aperture (radius, length, width, etc.)
@@ -21,14 +20,10 @@ classdef Plane < Element
             obj.apertureParams = struct();
             obj.name = p.Results.name;
             obj.dim = p.Results.dim;
+        end
 
-            if obj.dim == 2
-                obj.phaseFunction = @(x, y, lambda) zeros(size(x));
-            elseif obj.dim == 1
-                obj.phaseFunction = @(x, lambda) zeros(size(x));
-            else
-                error('Dimensionality must be either 1 or 2.');
-            end
+        function phaseShift = phaseFunction(obj)
+            phaseShift = 0;
         end
 
         function field = apply(obj, field)

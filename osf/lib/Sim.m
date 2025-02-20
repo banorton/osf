@@ -116,8 +116,7 @@ classdef Sim < handle
 
                 if verbose
                     fprintf('Propagated to element %d (%s) at distance: %.3e m\n', i, obj.elements{i}.name, cumulativeDist);
-                    field.disp(sprintf('After element %d (%s)\nDist: %.0f mm', i, obj.elements{i}.name, 1000*cumulativeDist));
-                    pause(.001);
+                    field.disp('title', sprintf('After element %d (%s)\nDist: %.0f mm', i, obj.elements{i}.name, 1000*cumulativeDist));
                 end
             end
         end
@@ -169,8 +168,7 @@ classdef Sim < handle
 
                 if verbose
                     fprintf('Propagated to distance: %.3e m\n', currDist);
-                    field.disp(sprintf('Final Field\nDist: %.3e m', currDist));
-                    pause(.001);
+                    field.disp('title', sprintf('Final Field\nDist: %.3e m', currDist));
                 end
             end
         end
@@ -214,8 +212,7 @@ classdef Sim < handle
 
                     if verbose
                         fprintf('Propagated to distance: %.3e m (no elements present)\n', currDist);
-                        field.disp('Field after propagation (no elements)');
-                        pause(.001);
+                        field.disp('title', 'Field after propagation (no elements)');
                     end
                 end
                 return;
@@ -251,8 +248,7 @@ classdef Sim < handle
 
                 if verbose
                     fprintf('Propagated remaining distance to target: %.3e m\n', currDist);
-                    field.disp('Field after propagation to target distance');
-                    pause(.001);
+                    field.disp('title', 'Field after propagation to target distance');
                 end
             end
         end
@@ -285,8 +281,7 @@ classdef Sim < handle
             if verbose
                 cumulativeDist = sum(obj.distances(1:elementIndex));
                 fprintf('Finished propagating to element named: %s at distance: %.3e m\n', targetName, cumulativeDist);
-                field.disp(sprintf('Field after propagation to element (%s), Distance: %.3e m', targetName, cumulativeDist));
-                pause(.001);
+                field.disp('title', sprintf('Field after propagation to element (%s), Distance: %.3e m', targetName, cumulativeDist));
             end
         end
 
@@ -468,7 +463,7 @@ classdef Sim < handle
             end
 
             % Adjust axis limits (unchanged settings)
-            xlim([min(0, -2*currentX), currentX + 2*currentX]);
+            xlim([min(0, -.5*currentX), currentX + .5*currentX]);
             ylim([-0.1, 0.1]);
 
             % Draw a thick black baseline and tick marks with distance labels
@@ -536,10 +531,10 @@ classdef Sim < handle
             %   with no digits after the decimal, and element names are printed in a 
             %   bracketed list. If an element's name is empty, its type is used instead.
 
-            distances_mm   = round(obj.distances * 1e3);
-            fieldLength_mm = round(obj.fieldLength * 1e3);
-            resolution_um  = round(obj.resolution * 1e6);
-            lambda_nm      = round(obj.lambda * 1e9);
+            distances_mm   = obj.distances * 1e3;
+            fieldLength_mm = obj.fieldLength * 1e3;
+            resolution_um  = obj.resolution * 1e6;
+            lambda_nm      = obj.lambda * 1e9;
 
             % Build a cell array of element names (or types if name is empty)
             numEl = numel(obj.elements);
@@ -557,9 +552,9 @@ classdef Sim < handle
             fprintf('\nSim Parameters:\n');
             fprintf('-------------------------------\n');
             fprintf('  Elements:       %s\n', elementsStr);
-            fprintf('  Distances:      %s mm\n', mat2str(distances_mm));
-            fprintf('  Resolution:     %d um\n', resolution_um);
-            fprintf('  Field Length:   %d mm\n', fieldLength_mm);
+            fprintf('  Distances:      %s\n', mat2str(distances_mm));
+            fprintf('  Resolution:     %.2f um\n', resolution_um);
+            fprintf('  Field Length:   %.1f mm\n', fieldLength_mm);
             fprintf('  Samples:        %d\n', obj.samples);
             fprintf('  Dimensionality: %d\n', obj.dim);
             fprintf('  Wavelength:     %d nm\n', lambda_nm);
