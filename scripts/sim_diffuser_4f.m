@@ -17,7 +17,7 @@ sim.disp();
 field = sim.newField().addAmplitudeRect(.2e-3, 10);
 field.disp('title', 'Inital Field');
 
-for corrLen = 5e-6:5e-6:30e-6
+for corrLen = 0e-6:5e-6:30e-6
     diffuser.correlationLength = corrLen;
     diffuser.print();
     titleStr = sprintf('roughness: %.1fmm, coherenceLength: %.1fmm', diffuser.roughness*1e6, diffuser.correlationLength*1e6);
