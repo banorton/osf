@@ -1,5 +1,5 @@
 clearvars; clc; close all;
-import_dir("../osf/lib");
+addpath('../');
 
 %%
 

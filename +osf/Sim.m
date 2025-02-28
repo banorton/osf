@@ -482,8 +482,8 @@ classdef Sim < handle
 
             % --- Paraxial Ray Overlay ---
             % Create a ParaxialSystem object from this Sim object and solve it.
-            parax = ParaxialSystem(obj);
-            parax = ParaxialSystem.solveSystem(parax);
+            parax = osf.parax.ParaxialSystem(obj);
+            parax = osf.parax.ParaxialSystem.solveSystem(parax);
 
             % Compute the cumulative distances along the system.
             dist = cumsum(parax.distances);

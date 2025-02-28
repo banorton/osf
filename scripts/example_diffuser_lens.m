@@ -1,5 +1,5 @@
 clearvars; clc; close all;
-import_dir("../osf/lib");
+addpath('../');
 
 %%
 % Here we create a simulation with a 1um resolution and a 1mm by 1mm

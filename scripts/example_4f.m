@@ -1,5 +1,5 @@
 clearvars; clc; close all;
-import_dir("../osf/lib");
+addpath('../');
 
 %%
 % Here we create a simulation with a 1um resolution and a 1mm by 1mm
@@ -32,5 +32,3 @@ field = sim.newField().addPhaseRect(rect_width, pi);
 % after every element in the system.
 sim.prop(field, 'verbose', true);
 
-%%
-import_dir("../osf/lib", "unload");
