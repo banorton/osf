@@ -1,8 +1,8 @@
 clearvars; clc; close all;
 addpath('../');
-
 %%
 
+import osf.Sim;
 sim = Sim(.5e-6, 1e-3, 'paddingRatio', 1.5, 'lambda', 532e-9, 'dim', 2);
 
 ratio = 3/15;
@@ -36,7 +36,3 @@ for corrLen = 30e-6:-5e-6:1e-6
 
     sim.prop(field).disp('title', titleStr, 'cross', true);
 end
-
-%%
-
-import_dir("../osf/lib", "unload");
