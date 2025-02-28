@@ -26,11 +26,11 @@ classdef Field
             % Initialize amplitude and phase based on dimensionality
             if dim == 1
                 samples = round(fieldLength / resolution);
-                obj.amplitude = ones(1, samples);
+                obj.amplitude = zeros(1, samples);
                 obj.phase = zeros(1, samples);
             elseif dim == 2
                 samples = round(fieldLength / resolution);
-                obj.amplitude = ones(samples, samples);
+                obj.amplitude = zeros(samples, samples);
                 obj.phase = zeros(samples, samples);
             end
         end
@@ -52,93 +52,266 @@ classdef Field
             obj.phase = zeros(size(obj.phase));
         end
 
-        function obj = addPhaseShift(obj, phaseShift)
-            % Add a global phase shift
-            obj.phase = obj.phase + phaseShift;
-        end
+        function obj = addPhase(obj, value, varargin)
+            % addPhase applies a phase shift to the field.
+            %
+            % Usage:
+            %   field.addPhase(value)                         % Global phase shift
+            %   field.addPhase(value, 'rectangle', size)     % Rectangular shift
+            %   field.addPhase(value, 'circle', radius)      % Circular shift
+            %   field.addPhase(value, 'annulus', [r1, r2])   % Annular shift
+            %   field.addPhase(value, 'rectangle', size, offset) % Rect at offset
+            %   field.addPhase(value, 'circle', radius, offset)  % Circle at offset
+            %   field.addPhase(value, 'annulus', [r1, r2], offset) % Annulus at offset
 
-        function obj = addAmplitudeMask(obj, mask)
-            % Add an amplitude mask to the field
-            if ~isequal(size(obj.amplitude), size(mask))
-                error('Size of mask must match the size of the field amplitude.');
+            % Ensure first argument (value) is provided
+            if nargin < 2
+                error('addPhase requires at least a value argument.');
             end
-            obj.amplitude = obj.amplitude .* mask;
-        end
 
-        function obj = addPhaseRect(obj, rect_size, phase_shift)
-            % Create a rectangle shaped phase shift at the center of the
-            % field of a specified size
-            if obj.dim == 1
-                rect_half_samples = round((rect_size / 2) / obj.resolution);
-                middle = round(length(obj.phase) / 2);
-                start_idx = max(1, middle - rect_half_samples);
-                end_idx = min(length(obj.phase), middle + rect_half_samples);
-                obj.phase(start_idx:end_idx) = obj.phase(start_idx:end_idx) + phase_shift;
-            elseif obj.dim == 2
-                if isscalar(rect_size)
-                    rect_half_width = round((rect_size / 2) / obj.resolution);
-                    rect_half_height = rect_half_width;
-                elseif isvector(rect_size)
-                    rect_half_width = round((rect_size(1) / 2) / obj.resolution);
-                    rect_half_height = round((rect_size(2) / 2) / obj.resolution);
+            % Default values
+            shape = 'global';  % Default shape type
+            region_size = [];
+            position = [];
+
+            % Parse the second argument (shape/type)
+            if nargin > 2
+                shape = varargin{1};
+            end
+
+            % Standardize shape type
+            type = obj.standardizeType(shape);
+
+            % If 'global', no additional arguments are allowed
+            if strcmp(type, 'global')
+                if nargin > 3
+                    error('Global phase shift does not take a size or position argument.');
+                end
+            else
+                % If type is not 'global', the 3rd argument (size) is required
+                if nargin < 4
+                    error('Size is required for shape: %s', type);
                 end
 
-                middle_x = round(size(obj.phase, 2) / 2);
-                middle_y = round(size(obj.phase, 1) / 2);
+                % Assign and validate the size argument
+                region_size = varargin{2};
+                if strcmp(type, 'circle') && ~isscalar(region_size)
+                    error('Circle size must be a scalar (radius).');
+                end
+                if strcmp(type, 'rectangle') && isscalar(region_size) && obj.dim == 2
+                    region_size = [region_size, region_size]; % Convert scalar to [w, h] if 2D
+                end
+                if strcmp(type, 'annulus') && (~isnumeric(region_size) || numel(region_size) ~= 2)
+                    error('Annulus size must be a two-element vector [inner_radius, outer_radius].');
+                end
+            end
 
-                start_x = max(1, middle_x - rect_half_width);
-                end_x = min(size(obj.phase, 2), middle_x + rect_half_width);
-                start_y = max(1, middle_y - rect_half_height);
-                end_y = min(size(obj.phase, 1), middle_y + rect_half_height);
+            % Assign position offset if provided
+            if nargin > 4
+                position = varargin{3};
+            end
 
-                obj.phase(start_y:end_y, start_x:end_x) = obj.phase(start_y:end_y, start_x:end_x) + phase_shift;
+            region_size = round(region_size / obj.resolution);
+            position = round(position / obj.resolution);
+
+            % Apply modification (dimensionality checks happen inside applyMod)
+            if obj.dim == 1
+                obj.phase = obj.applyModification1D(obj.phase, value, type, region_size, position);
+            elseif obj.dim == 2
+                obj.phase = obj.applyModification2D(obj.phase, value, type, region_size, position);
             else
                 error('Dimensionality must be either 1 or 2.');
             end
         end
 
-        function obj = addAmplitudeRect(obj, rect_size, amplitude_change)
-            % addAmplitudeRect Applies a rectangular amplitude change at the center
-            % of the field.
-            % For 1D fields, it adjusts a segment of the amplitude array.
-            % For 2D fields, it adjusts a rectangular region.
+        function obj = addAmplitude(obj, value, varargin)
+            % addAmplitude applies an amplitude change to the field.
             %
-            % Inputs:
-            %   rect_size         - Size of the rectangle (scalar for 1D or 2D square,
-            %                       or [width, height] for a 2D rectangle)
-            %   amplitude_change  - The value to add to the amplitude in the specified region.
-            %
-            % Example:
-            %   field = field.addAmplitudeRect(0.005, 0.2);
+            % Usage:
+            %   field.addAmplitude(value)                         % Global amplitude change
+            %   field.addAmplitude(value, 'rectangle', size)     % Rectangular shift
+            %   field.addAmplitude(value, 'circle', radius)      % Circular shift
+            %   field.addAmplitude(value, 'annulus', [r1, r2])   % Annular shift
+            %   field.addAmplitude(value, 'rectangle', size, offset) % Rect at offset
+            %   field.addAmplitude(value, 'circle', radius, offset)  % Circle at offset
+            %   field.addAmplitude(value, 'annulus', [r1, r2], offset) % Annulus at offset
 
-            if obj.dim == 1
-                rect_half_samples = round((rect_size / 2) / obj.resolution);
-                middle = round(length(obj.amplitude) / 2);
-                start_idx = max(1, middle - rect_half_samples);
-                end_idx = min(length(obj.amplitude), middle + rect_half_samples);
-                obj.amplitude(start_idx:end_idx) = obj.amplitude(start_idx:end_idx) + amplitude_change;
-            elseif obj.dim == 2
-                if isscalar(rect_size)
-                    rect_half_width = round((rect_size / 2) / obj.resolution);
-                    rect_half_height = rect_half_width;
-                elseif isvector(rect_size)
-                    rect_half_width = round((rect_size(1) / 2) / obj.resolution);
-                    rect_half_height = round((rect_size(2) / 2) / obj.resolution);
-                else
-                    error('rect_size must be a scalar or a two-element vector for 2D fields.');
+            % Ensure first argument (value) is provided
+            if nargin < 2
+                error('addAmplitude requires at least a value argument.');
+            end
+
+            % Default values
+            shape = 'global';  % Default shape type
+            region_size = [];
+            position = [];
+
+            % Parse the second argument (shape/type)
+            if nargin > 2
+                shape = varargin{1};
+            end
+
+            % Standardize shape type
+            type = obj.standardizeType(shape);
+
+            % If 'global', no additional arguments are allowed
+            if strcmp(type, 'global')
+                if nargin > 3
+                    error('Global amplitude shift does not take a size or position argument.');
+                end
+            else
+                % If type is not 'global', the 3rd argument (size) is required
+                if nargin < 4
+                    error('Size is required for shape: %s', type);
                 end
 
-                middle_x = round(size(obj.amplitude, 2) / 2);
-                middle_y = round(size(obj.amplitude, 1) / 2);
+                % Assign and validate the size argument
+                region_size = varargin{2};
+                if strcmp(type, 'circle') && ~isscalar(region_size)
+                    error('Circle size must be a scalar (radius).');
+                end
+                if strcmp(type, 'rectangle') && isscalar(region_size) && obj.dim == 2
+                    region_size = [region_size, region_size]; % Convert scalar to [w, h] if 2D
+                end
+                if strcmp(type, 'annulus') && (~isnumeric(region_size) || numel(region_size) ~= 2)
+                    error('Annulus size must be a two-element vector [inner_radius, outer_radius].');
+                end
+            end
 
-                start_x = max(1, middle_x - rect_half_width);
-                end_x = min(size(obj.amplitude, 2), middle_x + rect_half_width);
-                start_y = max(1, middle_y - rect_half_height);
-                end_y = min(size(obj.amplitude, 1), middle_y + rect_half_height);
+            % Assign position offset if provided
+            if nargin > 4
+                position = varargin{3};
+            end
 
-                obj.amplitude(start_y:end_y, start_x:end_x) = obj.amplitude(start_y:end_y, start_x:end_x) + amplitude_change;
+            region_size = round(region_size / obj.resolution);
+            position = round(position / obj.resolution);
+
+            % Apply modification (dimensionality checks happen inside applyMod)
+            if obj.dim == 1
+                obj.amplitude = obj.applyModification1D(obj.amplitude, value, type, region_size, position);
+            elseif obj.dim == 2
+                obj.amplitude = obj.applyModification2D(obj.amplitude, value, type, region_size, position);
             else
                 error('Dimensionality must be either 1 or 2.');
+            end
+        end
+
+        function type = standardizeType(~, inputType)
+            % Maps multiple aliases to a single canonical shape name.
+            
+            % Define mapping of all possible aliases
+            typeMap = struct(...
+                'global', 'global', 'g', 'global', 'glob', 'global', ...
+                'rect', 'rectangle', 'rectangle', 'rectangle', 'r', 'rectangle', 'rectangular', 'rectangle', ...
+                'circ', 'circle', 'circle', 'circle', 'c', 'circle', 'circular', 'circle', ...
+                'annu', 'annulus', 'annulus', 'annulus', 'a', 'annulus', 'annular', 'annulus');
+        
+            % Ensure input is a string and convert to lowercase
+            if ~ischar(inputType) && ~isstring(inputType)
+                error('Input type must be a string.');
+            end
+            inputType = lower(char(inputType)); % Convert string to char if needed
+        
+            % Check if input exists in typeMap
+            if isfield(typeMap, inputType)
+                type = typeMap.(inputType);
+            else
+                error('Invalid type: %s. Must be ''global'', ''rectangle'', ''circle'', or ''annulus''.', inputType);
+            end
+        end
+
+        function field = applyModification1D(~, field, value, type, region_size, position)
+            % Applies a phase or amplitude change to a 1D field based on shape type.
+            if isempty(position)
+                position = 0;
+            end
+
+            len = length(field);
+            middle = round(len / 2);  % Center of the field
+            pos_shift = round(position / 2);  % Adjusted for pixel index shift
+
+            switch type
+            case 'global'
+                field = field + value;
+
+            case 'rectangle'
+                if isempty(region_size)
+                    error('Rectangle size must be specified for 1D.');
+                end
+                rect_half = round(region_size / 2);
+                start_idx = max(1, middle + pos_shift - rect_half);
+                end_idx = min(len, middle + pos_shift + rect_half);
+                field(start_idx:end_idx) = field(start_idx:end_idx) + value;
+
+            case 'circle'
+                error('Circle modifications are not valid for 1D fields.');
+
+            case 'annulus'
+                error('Annulus modifications are not valid for 1D fields.');
+
+            otherwise
+                error('Unsupported type for 1D modification: %s', type);
+            end
+        end
+
+        function field = applyModification2D(~, field, value, type, region_size, position)
+            % Applies a phase or amplitude change to a 2D field based on shape type.
+            if isempty(position)
+                position = [0 0];
+            end
+
+            [height, width] = size(field);
+            middle_x = round(width / 2);
+            middle_y = round(height / 2);
+
+            % Apply position shift
+            pos_shift_x = round(position(1) / 2);
+            pos_shift_y = round(position(2) / 2);
+
+            center_x = middle_x + pos_shift_x;
+            center_y = middle_y + pos_shift_y;
+
+            switch type
+            case 'global'
+                field = field + value;
+
+            case 'rectangle'
+                if isempty(region_size)
+                    error('Rectangle size must be specified.');
+                end
+                if isscalar(region_size)
+                    region_size = [region_size, region_size]; % Convert scalar to [w, h]
+                end
+                half_w = round(region_size(1) / 2);
+                half_h = round(region_size(2) / 2);
+                start_x = max(1, center_x - half_w);
+                end_x = min(width, center_x + half_w);
+                start_y = max(1, center_y - half_h);
+                end_y = min(height, center_y + half_h);
+                field(start_y:end_y, start_x:end_x) = field(start_y:end_y, start_x:end_x) + value;
+
+            case 'circle'
+                if isempty(region_size) || ~isscalar(region_size)
+                    error('Circle size must be a scalar (radius).');
+                end
+                radius = round(region_size);
+                [X, Y] = meshgrid(1:width, 1:height);
+                mask = ((X - center_x).^2 + (Y - center_y).^2) <= radius^2;
+                field(mask) = field(mask) + value;
+
+            case 'annulus'
+                if isempty(region_size) || numel(region_size) ~= 2
+                    error('Annulus size must be a two-element vector [inner_radius, outer_radius].');
+                end
+                outer_radius = round(region_size(1));
+                inner_radius = round(region_size(2));
+                [X, Y] = meshgrid(1:width, 1:height);
+                mask = ((X - center_x).^2 + (Y - center_y).^2) <= outer_radius^2 & ...
+                ((X - center_x).^2 + (Y - center_y).^2) > inner_radius^2;
+                field(mask) = field(mask) + value;
+
+            otherwise
+                error('Unsupported type for 2D modification: %s', type);
             end
         end
 
@@ -238,7 +411,7 @@ classdef Field
                     pos = round(cols/2);
                 end
             end
-            
+
             if crossFlag
                 % Create a new figure with a 2x2 grid.
                 fig = figure('Position', [300 100 1200 700]);
