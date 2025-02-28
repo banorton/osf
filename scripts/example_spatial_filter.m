@@ -1,7 +1,9 @@
 clearvars; clc; close all;
 addpath('../');
+import osf.Sim;
 
 %%
+
 % Here we create a simulation with a 1um resolution and a 1mm by 1mm
 % window. It has a padding ratio of 2 meaning that, when propagation, it
 % will add 0 padding 2 times the size of length/resolution on all sides.

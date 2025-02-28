@@ -1,5 +1,6 @@
 clearvars; clc; close all;
 addpath('../');
+import osf.Sim;
 
 %%
 
