@@ -1,4 +1,4 @@
-classdef Aperture < Element
+classdef Aperture < osf.Element
     properties
         name           % Name of the optical element
         phaseFunction  % Function handle for phase modification (if applicable)

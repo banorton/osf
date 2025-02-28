@@ -52,22 +52,22 @@ classdef Sim < handle
         end
 
         function lens = addLens(obj, dist, focalLength, varargin)
-            lens = Lens(focalLength, 'dim', obj.dim, varargin{:});
+            lens = osf.Lens(focalLength, 'dim', obj.dim, varargin{:});
             obj.addElement(dist, lens);
         end
 
         function diffuser = addDiffuser(obj, dist, roughness, correlationLength, varargin)
-            diffuser = Diffuser(roughness, correlationLength, 'dim', obj.dim, varargin{:});
+            diffuser = osf.Diffuser(roughness, correlationLength, 'dim', obj.dim, varargin{:});
             obj.addElement(dist, diffuser);
         end
 
         function aperture = addAperture(obj, dist, varargin)
-            aperture = Aperture('dim', obj.dim, varargin{:});
+            aperture = osf.Aperture('dim', obj.dim, varargin{:});
             obj.addElement(dist, aperture);
         end
 
         function plane = addPlane(obj, dist, varargin)
-            plane = Plane('dim', obj.dim, varargin{:});
+            plane = osf.Plane('dim', obj.dim, varargin{:});
             obj.addElement(dist, plane);
         end
 
@@ -126,7 +126,7 @@ classdef Sim < handle
             % propagate a specified distance after the last element.
 
             p = inputParser;
-            addRequired(p, 'field', @(x) isa(x, 'Field'));
+            addRequired(p, 'field', @(x) isa(x, 'osf.Field'));
             addOptional(p, 'distAfter', 0, @isnumeric);
             addParameter(p, 'verbose', false, @islogical);
             addParameter(p, 'propMethod', 'as', @(x) ischar(x) && ismember(x, {'as', 'rs'}));
@@ -396,7 +396,7 @@ classdef Sim < handle
                     'spring', 'summer', 'autumn', 'winter', 'bone', 'copper', 'pink'}));
             parse(p, varargin{:});
 
-            field = Field(obj.dim, obj.fieldLength, obj.resolution, obj.lambda);
+            field = osf.Field(obj.dim, obj.fieldLength, obj.resolution, obj.lambda);
 
             % Only override cmap if the user provides an input
             if ~isempty(p.Results.cmap)

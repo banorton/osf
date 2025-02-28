@@ -238,7 +238,7 @@ classdef Field
                     pos = round(cols/2);
                 end
             end
-
+            
             if crossFlag
                 % Create a new figure with a 2x2 grid.
                 fig = figure('Position', [300 100 1200 700]);
@@ -259,7 +259,7 @@ classdef Field
 
                 % Bottom left: full phase image.
                 subplot(2,2,3);
-                imagesc(xAxis_full, yAxis_full, phase_unwrap(obj.phase));
+                imagesc(xAxis_full, yAxis_full, osf.utils.phase_unwrap(obj.phase));
                 colormap(gca, obj.cmap);
                 colorbar;
                 title('Field Phase');
@@ -302,7 +302,7 @@ classdef Field
                 axis equal; axis tight;
 
                 subplot(2,1,2);
-                imagesc(xAxis_full, yAxis_full, phase_unwrap(obj.phase));
+                imagesc(xAxis_full, yAxis_full, osf.utils.phase_unwrap(obj.phase));
                 colorbar;
                 colormap(gca, obj.cmap);
                 title('Field Phase');
@@ -377,7 +377,7 @@ classdef Field
 
                 % Bottom left: full-field phase.
                 subplot(2,2,3);
-                imagesc(xAxis_full, yAxis_full, phase_unwrap(obj.phase));
+                imagesc(xAxis_full, yAxis_full, osf.utils.phase_unwrap(obj.phase));
                 colormap(gca, obj.cmap);
                 colorbar;
                 title('Field Phase');
@@ -419,7 +419,7 @@ classdef Field
                 axis equal; axis tight;
 
                 subplot(2,1,2);
-                imagesc(xAxis_full, yAxis_full, phase_unwrap(obj.phase));
+                imagesc(xAxis_full, yAxis_full, osf.utils.phase_unwrap(obj.phase));
                 colorbar;
                 colormap(gca, obj.cmap);
                 title('Field Phase');
