@@ -54,15 +54,6 @@ classdef Field
 
         function obj = addPhase(obj, value, varargin)
             % addPhase applies a phase shift to the field.
-            %
-            % Usage:
-            %   field.addPhase(value)                         % Global phase shift
-            %   field.addPhase(value, 'rectangle', size)     % Rectangular shift
-            %   field.addPhase(value, 'circle', radius)      % Circular shift
-            %   field.addPhase(value, 'annulus', [r1, r2])   % Annular shift
-            %   field.addPhase(value, 'rectangle', size, offset) % Rect at offset
-            %   field.addPhase(value, 'circle', radius, offset)  % Circle at offset
-            %   field.addPhase(value, 'annulus', [r1, r2], offset) % Annulus at offset
 
             % Ensure first argument (value) is provided
             if nargin < 2
@@ -126,15 +117,6 @@ classdef Field
 
         function obj = addAmplitude(obj, value, varargin)
             % addAmplitude applies an amplitude change to the field.
-            %
-            % Usage:
-            %   field.addAmplitude(value)                         % Global amplitude change
-            %   field.addAmplitude(value, 'rectangle', size)     % Rectangular shift
-            %   field.addAmplitude(value, 'circle', radius)      % Circular shift
-            %   field.addAmplitude(value, 'annulus', [r1, r2])   % Annular shift
-            %   field.addAmplitude(value, 'rectangle', size, offset) % Rect at offset
-            %   field.addAmplitude(value, 'circle', radius, offset)  % Circle at offset
-            %   field.addAmplitude(value, 'annulus', [r1, r2], offset) % Annulus at offset
 
             % Ensure first argument (value) is provided
             if nargin < 2
