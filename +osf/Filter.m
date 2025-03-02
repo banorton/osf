@@ -6,32 +6,45 @@ classdef Filter < osf.Element
         apertureParams % Parameters for defining the aperture (radius, length, width, etc.)
         dim            % Dimensionality of the element (1 or 2)
 
-        type           % Type of filter ('ampltiude', or 'phase')
-        shape          % Shape of filter ('rect', 'circ', etc.)
+        field          % The field transformation filter applies
+        operation      % Operation mode ('mult' or 'add')
     end
 
     methods
-
-        function obj = Filter(varargin)
+        function obj = Filter(field, varargin)
+            % Constructor for Filter class
             p = inputParser;
-            addParameter(p, 'name', '', @ischar);
+            addRequired(p, 'field', @(x) isa(x, 'osf.Field'));
+            addParameter(p, 'name', '', @(x) ischar(x) || isstring(x));
             addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
-            parse(p, varargin{:});
+            addParameter(p, 'operation', 'mult', @(x) ischar(x) || isstring(x) && ismember(x, {'mult', 'add'}));
+
+            parse(p, field, varargin{:});
 
             obj.elementType = 'filter';
             obj.apertureType = 'none';
             obj.apertureParams = struct();
             obj.name = p.Results.name;
             obj.dim = p.Results.dim;
+            obj.operation = char(p.Results.operation);
+            obj.field = field;
         end
 
-        function phaseShift = phaseFunction(obj)
+        function phaseShift = phaseFunction(~)
+            % No specific phase function for a general filter
             phaseShift = 0;
         end
 
         function field = apply(obj, field)
+            switch obj.operation
+                case 'mult'
+                    field.amplitude = field.amplitude .* obj.field.amplitude;
+                    field.phase = obj.field.phase .* field.phase;
 
+                case 'add'
+                    field.amplitude = field.amplitude + obj.field.amplitude;
+                    field.phase = field.phase + obj.field.phase;
+            end
         end
-
     end
 end

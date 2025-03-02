@@ -71,6 +71,11 @@ classdef Sim < handle
             obj.addElement(dist, plane);
         end
 
+        function filter = addFilter(obj, dist, field, varargin)
+            filter = osf.Filter(field, varargin{:});
+            obj.addElement(dist, filter);
+        end
+
         %% PROPAGATION METHODS
         % These methods are typically wrappers around the propagation calculation methods.
 
@@ -116,23 +121,20 @@ classdef Sim < handle
 
                 if verbose
                     fprintf('Propagated to element %d (%s) at distance: %.3e m\n', i, obj.elements{i}.name, cumulativeDist);
-                    field.disp('title', sprintf('After element %d (%s)\nDist: %.0f mm', i, obj.elements{i}.name, 1000*cumulativeDist));
+                    field.disp('title', sprintf('After element %d (%s)\nDist: %.0f mm', i, obj.elements{i}.name, 1000*cumulativeDist), 'unwrap', ~strcmp(obj.elements{i}.elementType, 'filter'));
                 end
             end
         end
 
         function field = prop(obj, field, varargin)
-            % Propagate through all elements in the system and optionally
-            % propagate a specified distance after the last element.
+            % Propagate through all elements in the system.
 
             p = inputParser;
             addRequired(p, 'field', @(x) isa(x, 'osf.Field'));
-            addOptional(p, 'distAfter', 0, @isnumeric);
             addParameter(p, 'verbose', false, @islogical);
             addParameter(p, 'propMethod', 'as', @(x) ischar(x) && ismember(x, {'as', 'rs'}));
             parse(p, field, varargin{:});
 
-            distAfter = p.Results.distAfter;
             verbose = p.Results.verbose;
             propMethod = p.Results.propMethod;
 
@@ -140,36 +142,12 @@ classdef Sim < handle
                 fprintf('Starting propagation through all elements in the system\n');
             end
 
-            % Propagate through all elements
             lastElementIndex = length(obj.elements);
             if lastElementIndex > 0
                 field = obj.propToIndex(field, lastElementIndex, 'verbose', verbose, 'propMethod', propMethod);
                 currDist = sum(obj.distances);
             else
                 currDist = 0;
-            end
-
-            % Propagate beyond the last element if specified
-            if distAfter > 0
-                if obj.dim == 1
-                    if strcmp(propMethod, 'as')
-                        field = obj.angularSpectrumPropagation1D(field, distAfter);
-                    elseif strcmp(propMethod, 'rs')
-                        field = obj.rayleighSommerfeldPropagation1D(field, distAfter);
-                    end
-                else
-                    if strcmp(propMethod, 'as')
-                        field = obj.angularSpectrumPropagation(field, distAfter);
-                    elseif strcmp(propMethod, 'rs')
-                        field = obj.rayleighSommerfeldPropagation(field, distAfter);
-                    end
-                end
-                currDist = currDist + distAfter;
-
-                if verbose
-                    fprintf('Propagated to distance: %.3e m\n', currDist);
-                    field.disp('title', sprintf('Final Field\nDist: %.3e m', currDist));
-                end
             end
         end
 

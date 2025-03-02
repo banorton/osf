@@ -180,20 +180,20 @@ classdef Field
 
         function type = standardizeType(~, inputType)
             % Maps multiple aliases to a single canonical shape name.
-            
+
             % Define mapping of all possible aliases
             typeMap = struct(...
-                'global', 'global', 'g', 'global', 'glob', 'global', ...
-                'rect', 'rectangle', 'rectangle', 'rectangle', 'r', 'rectangle', 'rectangular', 'rectangle', ...
-                'circ', 'circle', 'circle', 'circle', 'c', 'circle', 'circular', 'circle', ...
-                'annu', 'annulus', 'annulus', 'annulus', 'a', 'annulus', 'annular', 'annulus');
-        
+            'global', 'global', 'g', 'global', 'glob', 'global', ...
+            'rect', 'rectangle', 'rectangle', 'rectangle', 'r', 'rectangle', 'rectangular', 'rectangle', ...
+            'circ', 'circle', 'circle', 'circle', 'c', 'circle', 'circular', 'circle', ...
+            'annu', 'annulus', 'annulus', 'annulus', 'a', 'annulus', 'annular', 'annulus');
+
             % Ensure input is a string and convert to lowercase
             if ~ischar(inputType) && ~isstring(inputType)
                 error('Input type must be a string.');
             end
             inputType = lower(char(inputType)); % Convert string to char if needed
-        
+
             % Check if input exists in typeMap
             if isfield(typeMap, inputType)
                 type = typeMap.(inputType);
@@ -367,18 +367,21 @@ classdef Field
             %   'cross'     - Logical flag; if true, display additional cross sections (default: false)
             %   'axis'      - 'x' (default) or 'y' for the cross-section direction
             %   'pos'       - Row or column index for the cross section (default: center)
+            %   'unwrap'    - Logical flag; if true (default), unwraps phase before displaying
 
             p = inputParser;
             addParameter(p, 'titleName', "", @ischar);
             addParameter(p, 'cross', false, @islogical);
             addParameter(p, 'axis', 'x', @(x) ischar(x) && ismember(lower(x), {'x','y'}));
             addParameter(p, 'pos', [], @(x) isnumeric(x) && isscalar(x));
+            addParameter(p, 'unwrap', true, @islogical);
             parse(p, varargin{:});
 
             titleName = p.Results.titleName;
             crossFlag = p.Results.cross;
             axisType = lower(p.Results.axis);
             pos = p.Results.pos;
+            unwrapFlag = p.Results.unwrap;
 
             % This function is defined only for 2D fields.
             if obj.dim ~= 2
@@ -392,6 +395,13 @@ classdef Field
                 else
                     pos = round(cols/2);
                 end
+            end
+
+            % Select whether to unwrap phase based on unwrapFlag
+            if unwrapFlag
+                phaseToPlot = osf.utils.phase_unwrap(obj.phase);
+            else
+                phaseToPlot = obj.phase;
             end
 
             if crossFlag
@@ -414,7 +424,7 @@ classdef Field
 
                 % Bottom left: full phase image.
                 subplot(2,2,3);
-                imagesc(xAxis_full, yAxis_full, osf.utils.phase_unwrap(obj.phase));
+                imagesc(xAxis_full, yAxis_full, phaseToPlot);
                 colormap(gca, obj.cmap);
                 colorbar;
                 title('Field Phase');
@@ -434,8 +444,11 @@ classdef Field
 
                 % Phase cross.
                 [xAxis_phase, phaseCrossData] = getPhaseCross(obj, axisType, pos);
+                if unwrapFlag
+                    phaseCrossData = unwrap(phaseCrossData);
+                end
                 subplot(2,2,4);
-                plot(xAxis_phase*1e3, unwrap(phaseCrossData), 'LineWidth', 1.5);
+                plot(xAxis_phase*1e3, phaseCrossData, 'LineWidth', 1.5);
                 title(sprintf('Phase Cross (%s-axis, pos = %.2fmm)', axisType, pos*obj.resolution*1e3));
                 xlabel('Position (mm)');
                 ylabel('Phase (rad)');
@@ -457,7 +470,7 @@ classdef Field
                 axis equal; axis tight;
 
                 subplot(2,1,2);
-                imagesc(xAxis_full, yAxis_full, osf.utils.phase_unwrap(obj.phase));
+                imagesc(xAxis_full, yAxis_full, phaseToPlot);
                 colorbar;
                 colormap(gca, obj.cmap);
                 title('Field Phase');
@@ -475,32 +488,26 @@ classdef Field
 
             pause(.001);
         end
-
         function fig = cross(obj, varargin)
-            % CROSS Displays the amplitude and phase of a 2D field, with optional cross sections.
+            % CROSS Displays the amplitude and phase cross-sections of a 2D field.
             %
             % This function is defined only for 2D fields.
-            % It shows full-field amplitude and phase images, and, if the 'cross' flag
-            % is true, it also displays the amplitude and phase cross sections in a 2x2 grid.
+            % It shows the cross-section of amplitude and phase based on user selection.
             %
             % Optional name/value pairs:
             %   'display' - 'both' (default), 'amplitude', or 'phase'
             %   'axis'    - 'x' (default) or 'y' for the cross-section direction
-            %
-            %   'pos'     - Row or column index for the cross section (default: center)
-            %   'cross'   - Logical flag; if true, display the cross sections (default: false)
+            %   'pos'     - Row or column index for the cross-section (default: center)
 
             p = inputParser;
             addParameter(p, 'display', 'both', @(x) ischar(x) && ismember(lower(x), {'both','amplitude','phase'}));
             addParameter(p, 'axis', 'x', @(x) ischar(x) && ismember(lower(x), {'x','y'}));
             addParameter(p, 'pos', [], @(x) isnumeric(x) && isscalar(x));
-            addParameter(p, 'cross', false, @islogical);
             parse(p, varargin{:});
 
             displayChoice = lower(p.Results.display);
             axisType = lower(p.Results.axis);
             pos = p.Results.pos;
-            crossFlag = p.Results.cross;
 
             % Set default pos value if not provided.
             [rows, cols] = size(obj.amplitude);
@@ -512,79 +519,38 @@ classdef Field
                 end
             end
 
-            if crossFlag
-                % Create a new figure with a 2x2 grid.
+            % Determine figure layout based on display choice
+            if strcmp(displayChoice, 'both')
                 fig = figure('Position', [300 100 1200 700]);
+                rows = 2;
+            else
+                fig = figure('Position', [300 100 1200 350]);
+                rows = 1;
+            end
 
-                % Left column: full-field images.
-                xAxis_full = linspace(-obj.fieldLength/2, obj.fieldLength/2, cols)*1e3;
-                yAxis_full = linspace(-obj.fieldLength/2, obj.fieldLength/2, rows)*1e3;
-
-                % Top left: full-field amplitude.
-                subplot(2,2,1);
-                imagesc(xAxis_full, yAxis_full, obj.amplitude);
-                colormap(gca, 'gray');
-                colorbar;
-                title('Field Amplitude');
-                xlabel('x (mm)');
-                ylabel('y (mm)');
-                axis equal; axis tight;
-
-                % Bottom left: full-field phase.
-                subplot(2,2,3);
-                imagesc(xAxis_full, yAxis_full, osf.utils.phase_unwrap(obj.phase));
-                colormap(gca, obj.cmap);
-                colorbar;
-                title('Field Phase');
-                xlabel('x (mm)');
-                ylabel('y (mm)');
-                axis equal; axis tight;
-
-                % Right column: cross sections using external helper functions.
-                % Amplitude cross section.
+            % Amplitude cross-section
+            if strcmp(displayChoice, 'both') || strcmp(displayChoice, 'amplitude')
                 [xAxis_amp, ampCrossData] = getAmplitudeCross(obj, axisType, pos);
-                subplot(2,2,2);
+                subplot(rows,1,1);
                 plot(xAxis_amp*1e3, ampCrossData, 'LineWidth', 1.5);
                 title(sprintf('Amplitude Cross (%s-axis, pos = %.2fmm)', axisType, pos*obj.resolution*1e3));
                 xlabel('Position (mm)');
                 ylabel('Amplitude');
                 grid off;
+            end
 
-                % Phase cross section.
+            % Phase cross-section
+            if strcmp(displayChoice, 'both') || strcmp(displayChoice, 'phase')
                 [xAxis_phase, phaseCrossData] = getPhaseCross(obj, axisType, pos);
-                subplot(2,2,4);
+                subplot(rows,1,rows);
                 plot(xAxis_phase*1e3, unwrap(phaseCrossData), 'LineWidth', 1.5);
                 title(sprintf('Phase Cross (%s-axis, pos = %.2fmm)', axisType, pos*obj.resolution*1e3));
                 xlabel('Position (mm)');
                 ylabel('Phase (rad)');
                 grid off;
-            else
-                % Without cross sections: use a 2-row layout with full-field images.
-                fig = figure('Position', [794 145 391 725]);
-                xAxis_full = linspace(-obj.fieldLength/2, obj.fieldLength/2, cols);
-                yAxis_full = linspace(-obj.fieldLength/2, obj.fieldLength/2, rows);
-
-                subplot(2,1,1);
-                imagesc(xAxis_full, yAxis_full, obj.amplitude);
-                colormap(gca, 'gray');
-                colorbar;
-                title('Field Amplitude');
-                xlabel('x (mm)');
-                ylabel('y (mm)');
-                axis equal; axis tight;
-
-                subplot(2,1,2);
-                imagesc(xAxis_full, yAxis_full, osf.utils.phase_unwrap(obj.phase));
-                colorbar;
-                colormap(gca, obj.cmap);
-                title('Field Phase');
-                xlabel('x (mm)');
-                ylabel('y (mm)');
-                axis equal; axis tight;
             end
 
             obj.applyTheme(fig);
-
             pause(.001);
         end
 
