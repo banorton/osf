@@ -686,5 +686,37 @@ classdef Field
             end
         end
 
+        function obj = img(obj, path, varargin)
+            p = inputParser;
+            addOptional(p, 'type', 'phase', @(x) ismember(x, {'phase', 'amplitude'}));
+            addOptional(p, 'range', [0 1], @(x) isnumeric(x) && numel(x) == 2);
+            parse(p, varargin{:});
+
+            type = p.Results.type;
+            range = p.Results.range;
+
+            % Read image and convert to grayscale if necessary
+            img = imread(path);
+            if size(img, 3) == 3
+                img = rgb2gray(img); % Convert to grayscale if RGB
+            end
+            img = double(img); % Convert to double for rangealization
+
+            % Normalize image to the specified range
+            img = (img - min(img(:))) / (max(img(:)) - min(img(:))); % Scale to [0,1]
+            img = range(1) + img * (range(2) - range(1)); % Scale to [range(1), range(2)]
+
+            % Resize image to match field dimensions
+            targetSize = size(obj.amplitude);
+            img = imresize(img, targetSize, 'bilinear');
+
+            % Assign to specified property
+            if strcmp(type, 'phase')
+                obj.phase = img;
+            else
+                obj.amplitude = img;
+            end
+        end
+
     end
 end
