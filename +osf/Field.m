@@ -297,18 +297,9 @@ classdef Field
             end
         end
 
-        function wdfValues = wdf(obj)
-            % Calculate the gradient or difference of the field phase
-            if obj.dim == 2
-                % 2D case: compute gradient of the phase
-                [dx, dy] = gradient(obj.phase, obj.resolution);
-                wdfValues = sqrt(dx.^2 + dy.^2); % Magnitude of the gradient
-            elseif obj.dim == 1
-                % 1D case: compute difference of the phase
-                wdfValues = diff(obj.phase) / obj.resolution;
-            else
-                error('Dimensionality must be either 1 or 2.');
-            end
+        function W = wdf(obj)
+            signal = obj.phase;
+            W = osf.utils.wdf(signal);
         end
 
         function fftField = fft(obj)
@@ -325,33 +316,67 @@ classdef Field
 
         function [xAxis, amplitudeData] = getAmplitudeCross(obj, axisType, pos)
             % getAmplitudeCross Returns the amplitude cross section of a 2D field.
+            % Default axis is 'x', and default position is the middle of the field.
             % Throws an error if the field is not 2D.
+
             if obj.dim ~= 2
                 error('getAmplitudeCross is defined only for 2D fields.');
             end
 
+            % Set default values if not provided
+            if nargin < 2 || isempty(axisType)
+                axisType = 'x'; % Default to x-axis
+            end
+            if nargin < 3 || isempty(pos)
+                if strcmp(axisType, 'x')
+                    pos = round(size(obj.amplitude, 1) / 2); % Middle row for x-axis cross section
+                else
+                    pos = round(size(obj.amplitude, 2) / 2); % Middle column for y-axis cross section
+                end
+            end
+
+            % Extract cross-section based on axis type
             if strcmp(axisType, 'x')
-                xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, size(obj.amplitude,2));
+                xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, size(obj.amplitude, 2));
                 amplitudeData = obj.amplitude(pos, :);
-            else  % axisType == 'y'
-                xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, size(obj.amplitude,1));
+            elseif strcmp(axisType, 'y')
+                xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, size(obj.amplitude, 1));
                 amplitudeData = obj.amplitude(:, pos);
+            else
+                error('Invalid axisType. Must be ''x'' or ''y''.');
             end
         end
 
         function [xAxis, phaseData] = getPhaseCross(obj, axisType, pos)
             % getPhaseCross Returns the phase cross section of a 2D field.
+            % Default axis is 'x', and default position is the middle of the field.
             % Throws an error if the field is not 2D.
+
             if obj.dim ~= 2
                 error('getPhaseCross is defined only for 2D fields.');
             end
 
+            % Set default values if not provided
+            if nargin < 2 || isempty(axisType)
+                axisType = 'x'; % Default to x-axis
+            end
+            if nargin < 3 || isempty(pos)
+                if strcmp(axisType, 'x')
+                    pos = round(size(obj.phase, 1) / 2); % Middle row for x-axis cross section
+                else
+                    pos = round(size(obj.phase, 2) / 2); % Middle column for y-axis cross section
+                end
+            end
+
+            % Extract cross-section based on axis type
             if strcmp(axisType, 'x')
-                xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, size(obj.phase,2));
+                xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, size(obj.phase, 2));
                 phaseData = obj.phase(pos, :);
-            else  % axisType == 'y'
-                xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, size(obj.phase,1));
+            elseif strcmp(axisType, 'y')
+                xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, size(obj.phase, 1));
                 phaseData = obj.phase(:, pos);
+            else
+                error('Invalid axisType. Must be ''x'' or ''y''.');
             end
         end
 
@@ -488,6 +513,7 @@ classdef Field
 
             pause(.001);
         end
+
         function fig = cross(obj, varargin)
             % CROSS Displays the amplitude and phase cross-sections of a 2D field.
             %
