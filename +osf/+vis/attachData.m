@@ -2,7 +2,7 @@ function attachData(ax, data)
     cla(ax);
 
     switch data.meta.plotType
-    case {'osf.Field.default', 'a', 'amplitude', 'p', 'phase'}
+    case {'osf.Field.default', 'a', 'amplitude', 'phase', 'p', 'phase.unwrap', 'p.unwrap'}
         imagesc(data.xAxis, data.yAxis, data.imageData);
         colormap(gca, data.cmap);
         colorbar;
@@ -66,7 +66,7 @@ function attachData(ax, data)
                 plotUnknown(ax, element.position, data.elementHeight);
             end
 
-            text(ax, element.position + 0.005, data.elementHeight / 2 + data.labelOffset, ...
+            text(ax, element.position - 0.000, data.elementHeight / 2 + data.labelOffset, ...
             element.name, 'HorizontalAlignment', 'center', 'FontSize', 12, ...
             'FontWeight', 'bold', 'Rotation', 45);
         end
@@ -75,11 +75,11 @@ function attachData(ax, data)
         ylim(ax, data.axisLimits(3:4));
 
         plot(ax, [min(data.componentCenters), max(data.componentCenters)], ...
-        [data.baselineY, data.baselineY], 'k', 'LineWidth', 2);
+        [data.baselineY, data.baselineY], 'k', 'LineWidth', 2, 'Tag', 'theme');
 
         for i = 1:length(data.componentCenters)
             xTick = data.componentCenters(i);
-            plot(ax, [xTick, xTick], [data.baselineY, data.baselineY + data.tickHeight], 'k', 'LineWidth', 2);
+            plot(ax, [xTick, xTick], [data.baselineY, data.baselineY + data.tickHeight], 'k', 'LineWidth', 2, 'Tag', 'theme');
 
             if i < length(data.componentCenters)
                 midX = (data.componentCenters(i) + data.componentCenters(i+1)) / 2;
@@ -111,7 +111,7 @@ function attachData(ax, data)
         end
 
         function plotPlane(ax, x, elementHeight)
-            plot(ax, [x, x], [-elementHeight/2, elementHeight/2], 'k', 'LineWidth', 2);
+            plot(ax, [x, x], [-elementHeight/2, elementHeight/2], 'k', 'LineWidth', 2, 'Tag', 'theme');
         end
 
         function plotUnknown(ax, x, elementHeight)

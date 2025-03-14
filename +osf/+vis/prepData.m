@@ -32,11 +32,11 @@ function data = prepData(obj, plotType, varargin)
         data.ylabel = 'y (mm)';
         data.colorbarLabel = 'Intensity';
 
-    case {'phase', 'p'}
+    case {'phase', 'p', 'phase.unwrap', 'p.unwrap'}
         data.xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, cols) * 1e3;
         data.yAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, rows) * 1e3;
-        if unwrapFlag
-            imageData = osf.utils.phase_unwrap(obj.phase);
+        if unwrapFlag || ismember(plotType, {'phase.unwrap', 'p.unwrap'})
+            imageData = osf.utils.phaseUnwrap(obj.phase);
         else
             imageData = obj.phase;
         end
@@ -109,7 +109,7 @@ function data = prepData(obj, plotType, varargin)
         end
 
         elementHeight = 0.04;
-        labelOffset = 0.015;
+        labelOffset = 0.02;
         currentX = 0;
         componentCenters = [];
 

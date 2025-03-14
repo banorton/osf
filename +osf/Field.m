@@ -306,16 +306,8 @@ classdef Field
 
         end
 
-        function fftField = fft(obj)
-            % Calculate the Fourier tranform of the complex field
-            complexField = obj.getComplexField();
-            if obj.dim == 1
-                fftField = fftshift(fft(complexField));
-            elseif obj.dim == 2
-                fftField = fftshift(fft2(complexField));
-            else
-                error('Dimensionality must be either 1 or 2.');
-            end
+        function obj = fft(obj)
+            obj.setComplexField(fftshift(fft(obj.getComplexField())));
         end
 
         function [xAxis, amplitudeData] = getAmplitudeCross(obj, axisType, pos)
@@ -384,8 +376,24 @@ classdef Field
             end
         end
 
+        function obj = unwrap(obj)
+            obj.phase = osf.utils.phaseUnwrap(obj.phase);
+        end
+
         function obj = show(obj, varargin)
-            osf.Dashboard([2,1], varargin{:}).show(obj, 'amplitude').show(obj, 'phase');
+            p = inputParser;
+            addParameter(p, 'unwrap', true, @islogical);
+            p.KeepUnmatched = true;
+
+            parse(p, varargin{:});
+            unwrapFlag = p.Results.unwrap;
+
+            phaseType = 'phase';
+            if unwrapFlag
+                phaseType = 'phase.unwrap';
+            end
+
+            osf.Dashboard([2,1], p.Unmatched).show(obj, 'amplitude').show(obj, phaseType);
         end
 
         function obj = img(obj, path, varargin)

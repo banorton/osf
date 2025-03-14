@@ -2,7 +2,7 @@ function fig = sim(sim, varargin)
 
     p = inputParser;
     addRequired(p, 'sim');
-    addOptional(p, 'plotType', 'simDefault', @(x) ischar(x) && ismember(x, {'default', 'simDefault'}));
+    addOptional(p, 'plotType', 'default', @(x) ischar(x) && ismember(x, {'default'}));
     addParameter(p, 'title', '', @(x) ischar(x) || isstring(x));
 
     p.KeepUnmatched = true;
@@ -10,10 +10,6 @@ function fig = sim(sim, varargin)
 
     plotType = p.Results.plotType;
     titleStr = p.Results.title;
-
-    if strcmp(plotType, 'default')
-        plotType = 'simDefault';
-    end
 
     fig = figure('Position', [275 400 1300 350], 'Color', 'white');
     ax = subplot(1,1,1);

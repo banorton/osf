@@ -99,6 +99,10 @@ classdef Sim < handle
                 error('Target index exceeds the number of elements in the system.');
             end
 
+            if verbose
+                fprintf('Starting propagation through all elements in the system\n');
+            end
+
             cumulativeDist = 0;
             collectedFields = {};
 
@@ -134,35 +138,15 @@ classdef Sim < handle
                     end
 
                     fprintf('Propagated to element %d (%s) at distance: %.3e m\n', i, elementTitle, cumulativeDist);
-                    field.show('title', sprintf('%s\nDist: %.0f mm', elementTitle, 1000 * cumulativeDist), 'figPosition', [746 169 430 712]);
+                    field.show('title', sprintf('%s\nDist: %.0f mm', elementTitle, 1000 * cumulativeDist), 'figPosition', [750 200 450 700]);
                 end
             end
         end
 
         function [field, collectedFields] = prop(obj, field, varargin)
-            % Propagate through all elements in the system.
-            % If 'collect' is true, stores the field after each element.
-
-            p = inputParser;
-            addRequired(p, 'field', @(x) isa(x, 'osf.Field'));
-            addParameter(p, 'verbose', false, @islogical);
-            addParameter(p, 'propMethod', 'as', @(x) ischar(x) && ismember(x, {'as', 'rs'}));
-            addParameter(p, 'collect', false, @islogical);
-            parse(p, field, varargin{:});
-
-            verbose = p.Results.verbose;
-            propMethod = p.Results.propMethod;
-            collect = p.Results.collect;
-
-            collectedFields = {}; % Initialize storage for collected fields
-
-            if verbose
-                fprintf('Starting propagation through all elements in the system\n');
-            end
-
             lastElementIndex = length(obj.elements);
             if lastElementIndex > 0
-                [field, collectedFields] = obj.propToIndex(field, lastElementIndex, 'verbose', verbose, 'propMethod', propMethod, 'collect', collect);
+                [field, collectedFields] = obj.propToIndex(field, lastElementIndex, varargin{:});
             end
         end
 
@@ -252,7 +236,7 @@ classdef Sim < handle
             % Propagate to an element by its name
 
             p = inputParser;
-            addRequired(p, 'field', @(x) isa(x, 'Field'));
+            addRequired(p, 'field', @(x) isa(x, 'osf.Field'));
             addRequired(p, 'targetName', @ischar);
             addParameter(p, 'verbose', false, @islogical);
             addParameter(p, 'propMethod', 'as', @(x) ischar(x) && ismember(x, {'as', 'rs'}));
@@ -376,9 +360,8 @@ classdef Sim < handle
 
         %% UTILITY METHODS
 
-        function wrappedPhi = wrap(~, phi)
-            % Wrap phase to the range [-pi, pi]
-            wrappedPhi = atan2(sin(phi), cos(phi));
+        function obj = show(obj, varargin)
+            osf.Dashboard([1,1], varargin{:}).show(obj);
         end
 
         function field = newField(obj, varargin)

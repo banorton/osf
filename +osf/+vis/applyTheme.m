@@ -7,9 +7,15 @@ function applyTheme(fig)
 
     ax = findall(fig, 'Type', 'axes');
     for i = 1:length(ax)
-        ax(i).XColor = 'white';
-        ax(i).YColor = 'white';
-        ax(i).ZColor = 'white';
+        if ~strcmp(ax(i).XColor, 'none')
+            ax(i).XColor = 'white';
+        end
+        if ~strcmp(ax(i).YColor, 'none')
+            ax(i).YColor = 'white';
+        end
+        if ~strcmp(ax(i).ZColor, 'none')
+            ax(i).ZColor = 'white';
+        end
         ax(i).Color = 'black';
         ax(i).GridColor = [0.5, 0.5, 0.5];
         ax(i).LineWidth = 1.2;
