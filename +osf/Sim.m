@@ -81,6 +81,11 @@ classdef Sim < handle
             obj.addElement(dist, grating);
         end
 
+        function detector = addDetector(obj, dist, resolution, pixelPitch, chipSize, varargin)
+            detector = osf.Detector(resolution, pixelPitch, chipSize, 'dim', obj.dim, varargin{:});
+            obj.addElement(dist, detector);
+        end
+
         %% PROPAGATION METHODS
         % These methods are typically wrappers around the propagation calculation methods.
 

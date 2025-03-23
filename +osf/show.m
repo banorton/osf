@@ -6,18 +6,14 @@ function fig = show(obj, varargin)
 
     objClass = class(obj);
 
-    validClasses = {'osf.Sim', 'osf.Field'};
-    if ~ismember(objClass, validClasses)
-        error('Invalid object class: %s.', objClass);
-    end
-
-    switch objClass
-    case 'osf.Sim'
+    if isa(obj, 'osf.Sim')
         fig = osf.vis.sim(obj, varargin{:});
-    case 'osf.Field'
+    elseif isa(obj, 'osf.Field')
         fig = osf.vis.field(obj, varargin{:});
-    otherwise
-        error('Support for object class %s has not been implemented.', objClass);
+    elseif isnumeric(obj) && isreal(obj)
+        fig = osf.vis.matrix(obj, varargin{:});
+    else
+        error('Unsupported input type: %s.', objClass);
     end
 
 end

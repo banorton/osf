@@ -17,8 +17,10 @@ function data = prepData(obj, plotType, varargin)
     data.meta.objectType = class(obj);
     data.meta.plotType = plotType;
 
-    if strcmp(data.meta.objectType, 'osf.Field')
+    if isa(obj, 'osf.Field')
         [rows, cols] = size(obj.amplitude);
+    elseif isnumeric(obj) && isreal(obj)
+        [rows, cols] = size(obj);
     end
 
     switch plotType
@@ -76,7 +78,7 @@ function data = prepData(obj, plotType, varargin)
     case {'wdf', 'amplitude.wdf', 'a.wdf'}
         [data.xAxis, cross] = obj.getAmplitudeCross();
         [imageData, yAxis, ~] = osf.utils.wvd(cross, sampleRate=obj.fieldLength/obj.resolution);
-        [imgRows, imgCols] = size(imageData);
+        [imgRows, ~] = size(imageData);
         data.imageData = imageData(1:round(imgRows*wdfLimit),:);
         data.yAxis = yAxis(1:round(imgRows*wdfLimit));
         data.colormap = 'default';
@@ -87,7 +89,7 @@ function data = prepData(obj, plotType, varargin)
     case {'phase.wdf', 'p.wdf'}
         [data.xAxis, cross] = obj.getPhaseCross();
         [imageData, yAxis, ~] = osf.utils.wvd(cross, sampleRate=obj.fieldLength/obj.resolution);
-        [imgRows, imgCols] = size(imageData);
+        [imgRows, ~] = size(imageData);
         data.imageData = imageData(1:round(imgRows*wdfLimit),:);
         data.yAxis = yAxis(1:round(imgRows*wdfLimit));
         data.colormap = 'default';
@@ -98,12 +100,21 @@ function data = prepData(obj, plotType, varargin)
     case {'osf.Sim.default'}
         data = prepSim(obj, data);
 
+    case {'double.default', 'single.default', 'uint8.default', 'uint16.default'}
+        data.imageData = obj;
+        data.xAxis = 1:size(obj, 2);
+        data.yAxis = 1:size(obj, 1);
+        data.cmap = 'gray';
+        data.title = '';
+        data.xlabel = 'Column';
+        data.ylabel = 'Row';
+        data.colorbarLabel = 'Value';
+
     otherwise
         error('Unhandled plotType: %s', plotType);
     end
 
     function data = prepSim(obj, data)
-
         if isempty(obj.elements)
             error('No elements to display in the simulation.');
         end
@@ -116,11 +127,9 @@ function data = prepData(obj, plotType, varargin)
         for i = 1:length(obj.elements)
             currentX = currentX + obj.distances(i);
             element = obj.elements{i};
-
             data.elements(i).position = currentX;
             data.elements(i).name = element.name;
             data.elements(i).type = lower(element.elementType);
-
             componentCenters = [componentCenters, currentX];
         end
 
@@ -135,9 +144,9 @@ function data = prepData(obj, plotType, varargin)
         parax = osf.parax.ParaxialSystem(obj);
         parax = osf.parax.ParaxialSystem.solveSystem(parax);
         data.paraxial.dist = cumsum(parax.distances);
-        data.paraxial.marginalRay = parax.marginalRay.heights * (0.8 * elementHeight / max(2 * abs(parax.marginalRay.heights)));
-        data.paraxial.chiefRay = parax.chiefRay.heights * (0.8 * elementHeight / max(2 * abs(parax.chiefRay.heights)));
-
+        data.paraxial.marginalRay = parax.marginalRay.heights * ...
+        (0.8 * elementHeight / max(2 * abs(parax.marginalRay.heights)));
+        data.paraxial.chiefRay = parax.chiefRay.heights * ...
+        (0.8 * elementHeight / max(2 * abs(parax.chiefRay.heights)));
     end
-
 end

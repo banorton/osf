@@ -32,8 +32,16 @@ function attachData(ax, data)
         ylabel(data.ylabel);
 
     case {'osf.Sim.default'}
-        % The sim plot is attached in a separate function because it is very complicated. Even some of the data processing.
         attachSim(ax, data);
+
+    case {'double.default', 'single.default', 'uint8.default', 'uint16.default'}
+        imagesc(data.xAxis, data.yAxis, data.imageData);
+        colormap(gca, data.cmap);
+        colorbar;
+        title(data.title);
+        xlabel(data.xlabel);
+        ylabel(data.ylabel);
+        axis image;
 
     otherwise
         error('Unhandled plotType: %s', data.meta.plotType);
