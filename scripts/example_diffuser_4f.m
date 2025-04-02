@@ -17,7 +17,7 @@ sim.addPlane(0, 'name', '')
 sim.addLens(0, 100e-3, 'name', 'f = 100mm');
 sim.addDiffuser(99e-3, roughness, correlationLength, 'name', 'Diffuser');
 sim.addLens(101e-3, 100e-3, 'name', 'f = 100mm');
-sim.addPlane(25e-3, 'name', 'Detector')
+det = s.addDetector(10e-3, [40 40], 10e-6, [.5e-3 .5e-3]);
 
 % Show a ray optics diagram of the system.
 sim.disp();

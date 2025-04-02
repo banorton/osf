@@ -1,4 +1,4 @@
-classdef Detector < osf.Element
+classdef Detector < osf.elements.Element
     properties
         name
         elementType
@@ -7,21 +7,21 @@ classdef Detector < osf.Element
         dim
 
         pixelPitch
-        chipSize
         resolution
         bitDepth = 8
+        show
     end
 
     methods
-        function obj = Detector(resolution, pixelPitch, chipSize, varargin)
+        function obj = Detector(resolution, pixelPitch, varargin)
             p = inputParser;
-            addParameter(p, 'name', '', @ischar);
+            addRequired(p, 'pixelPitch', @isnumeric);
+            addRequired(p, 'resolution', @isnumeric);
+            addParameter(p, 'name', 'Detector', @ischar);
             addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
             addParameter(p, 'bitDepth', 8, @isnumeric);
-            addRequired(p, 'pixelPitch', @isnumeric);
-            addRequired(p, 'chipSize', @isnumeric);
-            addRequired(p, 'resolution', @isnumeric);
-            parse(p, pixelPitch, chipSize, resolution, varargin{:});
+            addParameter(p, 'show', true, @islogical);
+            parse(p, pixelPitch, resolution, varargin{:});
 
             obj.elementType = 'detector';
             obj.apertureType = 'none';
@@ -29,9 +29,9 @@ classdef Detector < osf.Element
             obj.name = p.Results.name;
             obj.dim = p.Results.dim;
             obj.pixelPitch = p.Results.pixelPitch;
-            obj.chipSize = p.Results.chipSize;
             obj.resolution = p.Results.resolution;
             obj.bitDepth = p.Results.bitDepth;
+            obj.show = p.Results.show;
         end
 
         function field = apply(obj, field)
@@ -64,7 +64,20 @@ classdef Detector < osf.Element
             normalized = projected / max(projected(:));
             quantized = round(normalized * (levels - 1)) / (levels - 1);
 
-            osf.show(quantized, title="Detector");
+            if obj.show
+                osf.show(quantized, title="Detector");
+            end
+        end
+
+        function [fmin, fmax] = bandwidth(obj)
+            pitch = obj.pixelPitch;
+            res = obj.resolution;
+
+            fmax.x = 1 / (2 * pitch);
+            fmax.y = 1 / (2 * pitch);
+
+            fmin.x = 1 / (res(1) * pitch);
+            fmin.y = 1 / (res(2) * pitch);
         end
 
         function field = phaseFunction(obj, varargin)

@@ -1,4 +1,4 @@
-classdef Plane < osf.Element
+classdef Plane < osf.elements.Element
     properties
         name           % Name of the optical element
         elementType    % Type of optical element (e.g., 'plane', 'lens', 'custom')

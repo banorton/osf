@@ -1,4 +1,4 @@
-classdef Lens < osf.Element
+classdef Lens < osf.elements.Element
     properties
         name           % Name of the optical element
         elementType    % Type of optical element (e.g., 'plane', 'lens', 'custom')
@@ -13,7 +13,7 @@ classdef Lens < osf.Element
 
         function obj = Lens(focalLength, varargin)
             p = inputParser;
-            addParameter(p, 'name', '', @ischar);
+            addParameter(p, 'name', 'Lens', @ischar);
             addParameter(p, 'circ', 0, @isnumeric);
             addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
             addRequired(p, 'focalLength', @isnumeric);

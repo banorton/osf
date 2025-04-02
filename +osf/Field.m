@@ -428,5 +428,41 @@ classdef Field
             end
         end
 
+        function operationCheck(a, b)
+            if ~isa(a, 'Field') || ~isa(b, 'Field')
+                error('Both operands must be of class Field.');
+            end
+            if a.dim ~= b.dim
+                error('Fields must have the same dimensionality.');
+            end
+            if ~isequal(size(a.amplitude), size(b.amplitude)) || ~isequal(a.resolution, b.resolution)
+                error('Fields must have the same size and resolution.');
+            end
+        end
+
+        function result = plus(a, b)
+            a.operationCheck(b);
+            result = a;
+            result.setComplexField(a.getComplexField() + b.getComplexField());
+        end
+
+        function result = minus(a, b)
+            a.operationCheck(b);
+            result = a;
+            result.setComplexField(a.getComplexField() - b.getComplexField());
+        end
+
+        function result = times(a, b)
+            a.operationCheck(b);
+            result = a;
+            result.setComplexField(a.getComplexField() .* b.getComplexField());
+        end
+
+        function result = rdivide(a, b)
+            a.operationCheck(b);
+            result = a;
+            result.setComplexField(a.getComplexField() ./ b.getComplexField());
+        end
+
     end
 end

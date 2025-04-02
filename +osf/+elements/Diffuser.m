@@ -1,4 +1,4 @@
-classdef Diffuser < osf.Element
+classdef Diffuser < osf.elements.Element
     properties
         name           % Name of the optical element
         elementType    % Type of optical element (e.g., 'plane', 'lens', 'custom')

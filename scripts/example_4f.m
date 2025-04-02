@@ -1,13 +1,11 @@
 clearvars; clc; close all;
-addpath('../');
-%%
+import osf.*;
 
 % Here we create a simulation with a 1um resolution and a 1mm by 1mm
 % window. It has a padding ratio of 2 meaning that, when propagation, it
 % will add 0 padding 2 times the size of length/resolution on all sides.
 % The wavelength is green and it is in 2 dimenions.
-import osf.Sim;
-sim = Sim(1e-6, 1e-3, 'paddingRatio', 2, 'lambda', 532e-9, 'dim', 2);
+sim = Sim(1e-6, 1e-3, paddingRatio=1, lambda=100e-9);
 
 % Add elements for 4f system.
 distAfterPreviousElement = 20e-3;

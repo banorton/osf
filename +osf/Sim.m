@@ -6,7 +6,7 @@ classdef Sim < handle
         fieldLength       % Size of the field of view (meters)
         samples           % Number of samples (always scalar)
         dim               % 1 or 2 - Dimensionality of the system
-        lambda            % Wavelength of light in meters (default 632 nm)
+        wavelength            % Wavelength of light in meters (default 632 nm)
         paddingRatio      % Ratio of padding to add during propagation
     end
 
@@ -18,14 +18,14 @@ classdef Sim < handle
             addRequired(p, 'resolution', @isnumeric);
             addRequired(p, 'fieldLength', @isnumeric);
             addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
-            addParameter(p, 'lambda', 632e-9, @isnumeric);
+            addParameter(p, 'wavelength', 632e-9, @isnumeric);
             addParameter(p, 'paddingRatio', 1, @isnumeric);
             parse(p, resolution, fieldLength, varargin{:});
 
             obj.resolution = p.Results.resolution;
             obj.fieldLength = p.Results.fieldLength;
             obj.dim = p.Results.dim;
-            obj.lambda = p.Results.lambda;
+            obj.wavelength = p.Results.wavelength;
             obj.paddingRatio = p.Results.paddingRatio;
 
             obj.samples = round(obj.fieldLength / obj.resolution);
@@ -52,44 +52,67 @@ classdef Sim < handle
         end
 
         function lens = addLens(obj, dist, focalLength, varargin)
-            lens = osf.Lens(focalLength, 'dim', obj.dim, varargin{:});
+            lens = osf.elements.Lens(focalLength, 'dim', obj.dim, varargin{:});
             obj.addElement(dist, lens);
         end
 
         function diffuser = addDiffuser(obj, dist, roughness, correlationLength, varargin)
-            diffuser = osf.Diffuser(roughness, correlationLength, 'dim', obj.dim, varargin{:});
+            diffuser = osf.elements.Diffuser(roughness, correlationLength, 'dim', obj.dim, varargin{:});
             obj.addElement(dist, diffuser);
         end
 
         function aperture = addAperture(obj, dist, varargin)
-            aperture = osf.Aperture('dim', obj.dim, varargin{:});
+            aperture = osf.elements.Aperture('dim', obj.dim, varargin{:});
             obj.addElement(dist, aperture);
         end
 
         function plane = addPlane(obj, dist, varargin)
-            plane = osf.Plane('dim', obj.dim, varargin{:});
+            plane = osf.elements.Plane('dim', obj.dim, varargin{:});
             obj.addElement(dist, plane);
         end
 
         function filter = addFilter(obj, dist, field, varargin)
-            filter = osf.Filter(field, varargin{:});
+            filter = osf.elements.Filter(field, varargin{:});
             obj.addElement(dist, filter);
         end
 
         function grating = addGrating(obj, dist, linesPerMM, varargin)
-            grating = osf.Grating(linesPerMM, 'dim', obj.dim, varargin{:});
+            grating = osf.elements.Grating(linesPerMM, 'dim', obj.dim, varargin{:});
             obj.addElement(dist, grating);
         end
 
-        function detector = addDetector(obj, dist, resolution, pixelPitch, chipSize, varargin)
-            detector = osf.Detector(resolution, pixelPitch, chipSize, 'dim', obj.dim, varargin{:});
+        function source = addSource(obj, varargin)
+            p = inputParser;
+            p.KeepUnmatched = true;
+            addOptional(p, 'wavelength', []);
+            parse(p, varargin{:});
+
+            if isempty(p.Results.wavelength)
+                wavelength = obj.wavelength;
+            else
+                wavelength = p.Results.wavelength;
+                obj.wavelength = wavelength;
+            end
+
+            source = osf.elements.Source(wavelength, 'dim', obj.dim, p.Unmatched);
+            obj.addElement(0, source);
+        end
+
+        function detector = addDetector(obj, dist, varargin)
+            p = inputParser;
+            p.KeepUnmatched = true;
+            addParameter(p, 'resolution', [obj.samples, obj.samples]);
+            addParameter(p, 'pixelPitch', obj.resolution);
+            parse(p, varargin{:});
+
+            detector = osf.elements.Detector(p.Results.resolution, p.Results.pixelPitch, 'dim', obj.dim, p.Unmatched);
             obj.addElement(dist, detector);
         end
 
         %% PROPAGATION METHODS
         % These methods are typically wrappers around the propagation calculation methods.
 
-        function [field, collectedFields] = propToIndex(obj, field, targetIndex, varargin)
+        function result = propToIndex(obj, field, targetIndex, varargin)
             p = inputParser;
             addParameter(p, 'verbose', false, @(x) islogical(x) || isnumeric(x));
             addParameter(p, 'propMethod', 'as', @(x) ischar(x) && ismember(x, {'as', 'rs'}));
@@ -146,12 +169,18 @@ classdef Sim < handle
                     field.show('title', sprintf('%s\nDist: %.0f mm', elementTitle, 1000 * cumulativeDist), 'figPosition', [750 200 450 700]);
                 end
             end
+
+            if collect
+                result = collectedFields;
+            else
+                result = field;
+            end
         end
 
-        function [field, collectedFields] = prop(obj, field, varargin)
+        function result = prop(obj, field, varargin)
             lastElementIndex = length(obj.elements);
             if lastElementIndex > 0
-                [field, collectedFields] = obj.propToIndex(field, lastElementIndex, varargin{:});
+                result = obj.propToIndex(field, lastElementIndex, varargin{:});
             end
         end
 
@@ -283,7 +312,7 @@ classdef Sim < handle
             % Parameters for propagation.
             [Nx, Ny] = size(u_out);
             dx = obj.resolution; dy = obj.resolution;
-            lambda = obj.lambda;
+            wavelength = obj.wavelength;
 
             % Frequency axis computation.
             fx = (-Nx/2:Nx/2-1) / (Nx * dx);
@@ -291,7 +320,7 @@ classdef Sim < handle
             [FX_sqr, FY_sqr] = meshgrid(fx.^2, fy.^2);
 
             % Compute longitudinal wavevector component k_z.
-            k_z = 2 * pi * sqrt((1 / lambda^2) - FX_sqr - FY_sqr);
+            k_z = 2 * pi * sqrt((1 / wavelength^2) - FX_sqr - FY_sqr);
             clear FX_sqr FY_sqr;
 
             % Compute transfer function.
@@ -319,13 +348,13 @@ classdef Sim < handle
             uin_padded = obj.addPadding(uin);
 
             Nx = length(uin_padded);
-            k = 2 * pi / obj.lambda;
+            k = 2 * pi / obj.wavelength;
 
             dfx = 1 / (Nx * dx);
             fx = (-Nx / 2 : Nx / 2 - 1) * dfx;
 
             % Kernel for propagation in 1D
-            kernel = exp(1i * k * z * sqrt(1 - (obj.lambda * fx).^2));
+            kernel = exp(1i * k * z * sqrt(1 - (obj.wavelength * fx).^2));
             ftu = fftshift(fft(uin_padded));
             ftu = ftu .* kernel;
             uout_padded = ifft(ifftshift(ftu));
@@ -380,7 +409,7 @@ classdef Sim < handle
             'spring', 'summer', 'autumn', 'winter', 'bone', 'copper', 'pink'}));
             parse(p, varargin{:});
 
-            field = osf.Field(obj.dim, obj.fieldLength, obj.resolution, obj.lambda);
+            field = osf.Field(obj.dim, obj.fieldLength, obj.resolution, obj.wavelength);
 
             % Only override cmap if the user provides an input
             if ~isempty(p.Results.cmap)
@@ -388,144 +417,8 @@ classdef Sim < handle
             end
         end
 
-        % function plotFields(obj, collectedFields, varargin)
-        %     % Plots all stored fields in a grid layout.
-        %     % Default layout: Amplitudes (left), Phases (right).
-        %     % Inline layout: Top row = amplitudes, Bottom row = phases.
-        %     % Titles now include element index, name, and distance.
-        %
-        %     % Parse optional arguments
-        %     p = inputParser;
-        %     addParameter(p, 'layout', 'inline', @(x) ischar(x) && ismember(x, {'default', 'inline'}));
-        %     parse(p, varargin{:});
-        %     layout = p.Results.layout;
-        %
-        %     numFields = length(collectedFields);
-        %     if numFields == 0
-        %         error('No fields collected for plotting.');
-        %     end
-        %
-        %     % ---- Set Layout Based on Option ----
-        %     if strcmp(layout, 'default')
-        %         % 🚀 **Original Layout: Amplitudes (Left), Phases (Right)**
-        %         numRows = ceil(sqrt(numFields)); 
-        %         numCols = ceil(numFields / numRows) * 2; % Double columns (Amplitude, Phase)
-        %
-        %     elseif strcmp(layout, 'inline')
-        %         % 🚀 **New Inline Layout: Amplitudes on Top, Phases on Bottom**
-        %         numRows = 2; % Two rows
-        %         numCols = numFields;
-        %     end
-        %
-        %     % ---- Create Figure ----
-        %     fig = figure('Color', 'black', 'Position', [100 387 1686 513]);
-        %     tiledlayout(numRows, numCols, 'TileSpacing', 'Compact');
-        %
-        %     % Track cumulative distance
-        %     cumulativeDist = 0;
-        %
-        %     for i = 1:numFields
-        %         field = collectedFields{i};
-        %
-        %         % Get element name and type
-        %         if i <= length(obj.elements)
-        %             elementName = obj.elements{i}.name;
-        %             elementType = obj.elements{i}.elementType;
-        %         else
-        %             elementName = 'Start';
-        %             elementType = 'N/A';
-        %         end
-        %
-        %         % Update cumulative distance
-        %         if i > 1
-        %             cumulativeDist = cumulativeDist + obj.distances(i-1);
-        %         end
-        %
-        %         % Title format
-        %         titleText = sprintf('%s (%.0f mm)', elementName, 1000 * cumulativeDist);
-        %         unwrapPhase = ~strcmp(elementType, 'filter'); % Don't unwrap filters
-        %
-        %         % X and Y axis scaling
-        %         xAxis = linspace(-field.fieldLength/2, field.fieldLength/2, size(field.amplitude, 2)) * 1e3;
-        %         yAxis = linspace(-field.fieldLength/2, field.fieldLength/2, size(field.amplitude, 1)) * 1e3;
-        %
-        %         if strcmp(layout, 'default')
-        %             % **🚀 ORIGINAL BEHAVIOR (Amplitudes Left, Phases Right)**
-        %             nexttile;
-        %             imagesc(xAxis, yAxis, field.amplitude);
-        %             colormap(gca, 'gray');
-        %             colorbar;
-        %             t = title(sprintf('Amplitude\n%s', titleText), 'FontSize', 12, 'FontWeight', 'bold');
-        %             t.Tag = 'text'; % ✅ Ensure it turns white
-        %             xlabel('x (mm)'); ylabel('y (mm)');
-        %             axis equal; axis tight;
-        %
-        %             nexttile;
-        %             phaseData = field.phase;
-        %             if unwrapPhase
-        %                 phaseData = osf.utils.phase_unwrap(phaseData);
-        %             end
-        %             imagesc(xAxis, yAxis, phaseData);
-        %             colormap(gca, field.cmap);
-        %             colorbar;
-        %             t = title(sprintf('Phase\n%s', titleText), 'FontSize', 12, 'FontWeight', 'bold');
-        %             t.Tag = 'text'; % ✅ Ensure it turns white
-        %             xlabel('x (mm)'); ylabel('y (mm)');
-        %             axis equal; axis tight;
-        %
-        %         elseif strcmp(layout, 'inline')
-        %             % **🚀 NEW INLINE LAYOUT (Amplitudes on Top, Phases on Bottom)**
-        %             nexttile(i);
-        %             imagesc(xAxis, yAxis, field.amplitude);
-        %             colormap(gca, 'gray');
-        %             colorbar;
-        %             xlabel('x (mm)'); ylabel('y (mm)');
-        %             axis equal; axis tight;
-        %
-        %             % 🆕 **Title Above Each Column for Inline Layout**
-        %             if i == 1
-        %                 t = title(titleText, 'FontSize', 12, 'FontWeight', 'bold');
-        %                 t.Tag = 'text'; % ✅ Ensure it turns white
-        %             else
-        %                 t = title(titleText, 'FontSize', 12, 'FontWeight', 'bold');
-        %                 t.Tag = 'text'; % ✅ Ensure it turns white
-        %             end
-        %
-        %             nexttile(i + numCols);
-        %             phaseData = field.phase;
-        %             if unwrapPhase
-        %                 phaseData = osf.utils.phase_unwrap(phaseData);
-        %             end
-        %             imagesc(xAxis, yAxis, phaseData);
-        %             colormap(gca, field.cmap);
-        %             colorbar;
-        %             xlabel('x (mm)'); ylabel('y (mm)');
-        %             axis equal; axis tight;
-        %         end
-        %     end
-        %
-        %     % ---- Add Labels for Inline Mode ----
-        %     if strcmp(layout, 'inline')
-        %         % ✅ **Fix: Use normalized figure coordinates (0 to 1)**
-        %         t = annotation(fig, 'textbox', [0.03, 0.62, 0.1, 0.05], 'String', 'Amplitude', ...
-        %         'FontSize', 14, 'FontWeight', 'bold', 'EdgeColor', 'none', 'Rotation', 90, ...
-        %         'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle');
-        %         t.Tag = 'text'; % ✅ Ensure it turns white
-        %
-        %         t = annotation(fig, 'textbox', [0.03, 0.15, 0.1, 0.05], 'String', 'Phase', ...
-        %         'FontSize', 14, 'FontWeight', 'bold', 'EdgeColor', 'none', 'Rotation', 90, ...
-        %         'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle');
-        %         t.Tag = 'text'; % ✅ Ensure it turns white
-        %     end
-        %
-        %     % Apply theme
-        %     field.applyTheme(fig);
-        %
-        %     hold off;
-        % end
-
         function print(obj)
-            % PRINT Prints simulation parameters in a nicely formatted manner.
+            %   Prints simulation parameters in a nicely formatted manner.
             %   Length measurements are converted to mm (or um for resolution)
             %   with no digits after the decimal, and element names are printed in a 
             %   bracketed list. If an element's name is empty, its type is used instead.
@@ -533,7 +426,7 @@ classdef Sim < handle
             distances_mm   = obj.distances * 1e3;
             fieldLength_mm = obj.fieldLength * 1e3;
             resolution_um  = obj.resolution * 1e6;
-            lambda_nm      = obj.lambda * 1e9;
+            wavelength_nm      = obj.wavelength * 1e9;
 
             % Build a cell array of element names (or types if name is empty)
             numEl = numel(obj.elements);
@@ -556,7 +449,7 @@ classdef Sim < handle
             fprintf('  Field Length:   %.1f mm\n', fieldLength_mm);
             fprintf('  Samples:        %d\n', obj.samples);
             fprintf('  Dimensionality: %d\n', obj.dim);
-            fprintf('  Wavelength:     %d nm\n', lambda_nm);
+            fprintf('  Wavelength:     %d nm\n', wavelength_nm);
             fprintf('  Padding Ratio:  %.1f\n\n', obj.paddingRatio);
         end
 

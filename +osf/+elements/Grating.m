@@ -1,4 +1,4 @@
-classdef Grating < osf.Element
+classdef Grating < osf.elements.Element
     properties
         name           % Name of the optical element
         elementType    % Type of optical element (e.g., 'grating')

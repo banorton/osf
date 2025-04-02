@@ -9,7 +9,7 @@ function attachData(ax, data)
         title(data.title);
         xlabel(data.xlabel);
         ylabel(data.ylabel);
-        axis equal; axis tight;
+        % axis equal; axis tight;
 
     case {'cross', 'amplitude.cross', 'a.cross', 'phase.cross', 'p.cross'}
         hold on;
@@ -24,10 +24,15 @@ function attachData(ax, data)
 
     case {'wdf', 'amplitude.wdf', 'a.wdf', 'phase.wdf', 'p.wdf'}
         imagesc(data.xAxis, data.yAxis, data.imageData);
+        if  isfield(data, 'xBox')
+            hold on;
+            fill(data.xBox, data.yBox, 'r', 'FaceAlpha', 0.1, 'EdgeColor', 'r');
+        end
         axis xy;
         colormap(gca, data.colormap);
-        colorbar;
-        title(data.colorbarLabel);
+        c = colorbar;
+        c.Label.String = data.colorbarLabel;
+        title(data.title);
         xlabel(data.xlabel);
         ylabel(data.ylabel);
 
@@ -41,7 +46,6 @@ function attachData(ax, data)
         title(data.title);
         xlabel(data.xlabel);
         ylabel(data.ylabel);
-        axis image;
 
     otherwise
         error('Unhandled plotType: %s', data.meta.plotType);
@@ -59,6 +63,10 @@ function attachData(ax, data)
         ax.YTick = [];
         ax.Box = 'off';
 
+        if data.isempty == true
+            return
+        end
+
         for i = 1:length(data.elements)
             element = data.elements(i);
 
@@ -70,7 +78,7 @@ function attachData(ax, data)
             case 'plane'
                 plotPlane(ax, element.position, data.elementHeight);
             otherwise
-                warning('Unknown element type: %s', element.type);
+                % warning('Unknown element type: %s', element.type);
                 plotUnknown(ax, element.position, data.elementHeight);
             end
 
@@ -105,7 +113,7 @@ function attachData(ax, data)
         hold(ax, 'off');
 
         function plotLens(ax, x, elementHeight)
-            width = 0.005;
+            width = 0.001;
             t = linspace(0, pi, 20);
             X = [cos(t), -cos(t)] * width/2 + x;
             Y = [sin(t), -sin(t)] * elementHeight/2;
