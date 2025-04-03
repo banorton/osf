@@ -45,8 +45,8 @@ classdef Field
         end
 
         function obj = newField(obj)
-            obj.amplitude = ones(size(obj.amplitude));
-            obj.phase = zeros(size(obj.phase));
+            obj.amplitude = ones(obj.size);
+            obj.phase = zeros(obj.size);
         end
 
         function obj = setAmplitude(obj, value, varargin)
@@ -67,7 +67,7 @@ classdef Field
                 if nargin > 4, position = varargin{3}; end
                 region_size = round(region_size / obj.resolution);
                 position = round(position / obj.resolution);
-                mask = osf.utils.genMask(size(obj.amplitude), type, region_size, position);
+                mask = osf.utils.genMask(obj.size, type, region_size, position);
                 obj.amplitude(mask) = value;
             else
                 obj.amplitude(:) = value;
@@ -92,7 +92,7 @@ classdef Field
                 if nargin > 4, position = varargin{3}; end
                 region_size = round(region_size / obj.resolution);
                 position = round(position / obj.resolution);
-                mask = osf.utils.genMask(size(obj.amplitude), type, region_size, position);
+                mask = osf.utils.genMask(obj.size, type, region_size, position);
                 obj.amplitude(mask) = obj.amplitude(mask) + value;
             else
                 obj.amplitude = obj.amplitude + value;
@@ -117,7 +117,7 @@ classdef Field
                 if nargin > 4, position = varargin{3}; end
                 region_size = round(region_size / obj.resolution);
                 position = round(position / obj.resolution);
-                mask = osf.utils.genMask(size(obj.phase), type, region_size, position);
+                mask = osf.utils.genMask(obj.size, type, region_size, position);
                 obj.phase(mask) = value;
             else
                 obj.phase(:) = value;
@@ -142,7 +142,7 @@ classdef Field
                 if nargin > 4, position = varargin{3}; end
                 region_size = round(region_size / obj.resolution);
                 position = round(position / obj.resolution);
-                mask = osf.utils.genMask(size(obj.phase), type, region_size, position);
+                mask = osf.utils.genMask(obj.size, type, region_size, position);
                 obj.phase(mask) = obj.phase(mask) + value;
             else
                 obj.phase = obj.phase + value;
@@ -201,18 +201,18 @@ classdef Field
             end
             if nargin < 3 || isempty(pos)
                 if strcmp(axisType, 'x')
-                    pos = round(size(obj.amplitude, 1) / 2); % Middle row for x-axis cross section
+                    pos = round(obj.size(1) / 2); % Middle row for x-axis cross section
                 else
-                    pos = round(size(obj.amplitude, 2) / 2); % Middle column for y-axis cross section
+                    pos = round(obj.size(2) / 2); % Middle column for y-axis cross section
                 end
             end
 
             % Extract cross-section based on axis type
             if strcmp(axisType, 'x')
-                xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, size(obj.amplitude, 2));
+                xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, obj.size(2));
                 amplitudeData = obj.amplitude(pos, :);
             elseif strcmp(axisType, 'y')
-                xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, size(obj.amplitude, 1));
+                xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, obj.size(1));
                 amplitudeData = obj.amplitude(:, pos);
             else
                 error('Invalid axisType. Must be ''x'' or ''y''.');
@@ -234,18 +234,18 @@ classdef Field
             end
             if nargin < 3 || isempty(pos)
                 if strcmp(axisType, 'x')
-                    pos = round(size(obj.phase, 1) / 2); % Middle row for x-axis cross section
+                    pos = round(obj.size(1) / 2); % Middle row for x-axis cross section
                 else
-                    pos = round(size(obj.phase, 2) / 2); % Middle column for y-axis cross section
+                    pos = round(obj.size(2) / 2); % Middle column for y-axis cross section
                 end
             end
 
             % Extract cross-section based on axis type
             if strcmp(axisType, 'x')
-                xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, size(obj.phase, 2));
+                xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, obj.size(2));
                 phaseData = obj.phase(pos, :);
             elseif strcmp(axisType, 'y')
-                xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, size(obj.phase, 1));
+                xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, obj.size(1));
                 phaseData = obj.phase(:, pos);
             else
                 error('Invalid axisType. Must be ''x'' or ''y''.');
@@ -293,7 +293,7 @@ classdef Field
             img = range(1) + img * (range(2) - range(1)); % Scale to [range(1), range(2)]
 
             % Resize image to match field dimensions
-            targetSize = size(obj.amplitude);
+            targetSize = obj.size;
             img = imresize(img, targetSize, 'bilinear');
 
             % Assign to specified property
@@ -311,7 +311,7 @@ classdef Field
             if a.dim ~= b.dim
                 error('Fields must have the same dimensionality.');
             end
-            if ~isequal(size(a.amplitude), size(b.amplitude)) || ~isequal(a.resolution, b.resolution)
+            if ~isequal(a.size, b.size) || ~isequal(a.resolution, b.resolution)
                 error('Fields must have the same size and resolution.');
             end
         end
