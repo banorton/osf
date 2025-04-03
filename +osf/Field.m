@@ -27,11 +27,11 @@ classdef Field
             if dim == 1
                 obj.amplitude = ones(1, samples);
                 obj.phase = zeros(1, samples);
-                obj.size = [1 samples]
+                obj.size = [1 samples];
             elseif dim == 2
                 obj.amplitude = ones(samples, samples);
                 obj.phase = zeros(samples, samples);
-                obj.size = [samples samples]
+                obj.size = [samples samples];
             end
         end
 

@@ -4,10 +4,10 @@ function mask = genMask(arraySize, type, regionSize, position)
     end
 
     % Determine dimensionality
-    if isvector(arraySize)
+    if arraySize(1) == 1 || arraySize(2) == 1
         dim = 1;
         arrayLength = max(arraySize);
-    elseif ismatrix(arraySize) && numel(arraySize) == 2
+    elseif ismatrix(arraySize)
         dim = 2;
     else
         error('Unsupported arraySize format.');
