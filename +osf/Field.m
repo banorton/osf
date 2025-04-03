@@ -4,6 +4,7 @@ classdef Field
         phase        % Phase of the field (1D or 2D array)
         fieldLength  % Length of the field in meters (scalar for 1D, [width, height] for 2D)
         resolution   % Spatial resolution in meters per pixel (scalar)
+        size
         lambda       % Wavelength of light in meters
         dim          % Dimensionality of the field (1 or 2)
 
@@ -12,7 +13,6 @@ classdef Field
 
     methods
         function obj = Field(dim, fieldLength, resolution, lambda)
-            % Validate dimensionality
             if ~ismember(dim, [1, 2])
                 error('Dimensionality must be either 1 or 2.');
             end
@@ -23,158 +23,129 @@ classdef Field
             obj.lambda = lambda;
             obj.cmap = 'bone';
 
-            % Initialize amplitude and phase based on dimensionality
+            samples = round(fieldLength / resolution);
             if dim == 1
-                samples = round(fieldLength / resolution);
-                obj.amplitude = zeros(1, samples);
+                obj.amplitude = ones(1, samples);
                 obj.phase = zeros(1, samples);
+                obj.size = [1 samples]
             elseif dim == 2
-                samples = round(fieldLength / resolution);
-                obj.amplitude = zeros(samples, samples);
+                obj.amplitude = ones(samples, samples);
                 obj.phase = zeros(samples, samples);
+                obj.size = [samples samples]
             end
         end
 
         function complexField = getComplexField(obj)
-            % Returns the complex representation of the field
             complexField = obj.amplitude .* exp(1i * obj.phase);
         end
 
         function obj = setComplexField(obj, field)
-            % Set the amplitude and phase properties from a complex field
             obj.amplitude = abs(field);
             obj.phase = angle(field);
         end
 
-        function obj = resetField(obj)
-            % Reset the field amplitude to all 1s and phase to all 0s
+        function obj = newField(obj)
             obj.amplitude = ones(size(obj.amplitude));
             obj.phase = zeros(size(obj.phase));
         end
 
-        function obj = addPhase(obj, value, varargin)
-            % addPhase applies a phase shift to the field.
-
-            % Ensure first argument (value) is provided
+        function obj = setAmplitude(obj, value, varargin)
             if nargin < 2
-                error('addPhase requires at least a value argument.');
+                error('setAmplitude requires at least a value argument.');
             end
 
-            % Default values
-            shape = 'global';  % Default shape type
+            shape = 'global';
             region_size = [];
             position = [];
 
-            % Parse the second argument (shape/type)
-            if nargin > 2
-                shape = varargin{1};
-            end
-
-            % Standardize shape type
+            if nargin > 2, shape = varargin{1}; end
             type = obj.standardizeType(shape);
 
-            % If 'global', no additional arguments are allowed
-            if strcmp(type, 'global')
-                if nargin > 3
-                    error('Global phase shift does not take a size or position argument.');
-                end
-            else
-                % If type is not 'global', the 3rd argument (size) is required
-                if nargin < 4
-                    error('Size is required for shape: %s', type);
-                end
-
-                % Assign and validate the size argument
+            if ~strcmp(type, 'global')
+                if nargin < 4, error('Size is required for shape: %s', type); end
                 region_size = varargin{2};
-                if strcmp(type, 'circle') && ~isscalar(region_size)
-                    error('Circle size must be a scalar (radius).');
-                end
-                if strcmp(type, 'rectangle') && isscalar(region_size) && obj.dim == 2
-                    region_size = [region_size, region_size]; % Convert scalar to [w, h] if 2D
-                end
-                if strcmp(type, 'annulus') && (~isnumeric(region_size) || numel(region_size) ~= 2)
-                    error('Annulus size must be a two-element vector [inner_radius, outer_radius].');
-                end
-            end
-
-            % Assign position offset if provided
-            if nargin > 4
-                position = varargin{3};
-            end
-
-            region_size = round(region_size / obj.resolution);
-            position = round(position / obj.resolution);
-
-            % Apply modification (dimensionality checks happen inside applyMod)
-            if obj.dim == 1
-                obj.phase = obj.applyModification1D(obj.phase, value, type, region_size, position);
-            elseif obj.dim == 2
-                obj.phase = obj.applyModification2D(obj.phase, value, type, region_size, position);
+                if nargin > 4, position = varargin{3}; end
+                region_size = round(region_size / obj.resolution);
+                position = round(position / obj.resolution);
+                mask = osf.utils.genMask(size(obj.amplitude), type, region_size, position);
+                obj.amplitude(mask) = value;
             else
-                error('Dimensionality must be either 1 or 2.');
+                obj.amplitude(:) = value;
             end
         end
 
         function obj = addAmplitude(obj, value, varargin)
-            % addAmplitude applies an amplitude change to the field.
-
-            % Ensure first argument (value) is provided
             if nargin < 2
                 error('addAmplitude requires at least a value argument.');
             end
 
-            % Default values
-            shape = 'global';  % Default shape type
+            shape = 'global';
             region_size = [];
             position = [];
 
-            % Parse the second argument (shape/type)
-            if nargin > 2
-                shape = varargin{1};
-            end
-
-            % Standardize shape type
+            if nargin > 2, shape = varargin{1}; end
             type = obj.standardizeType(shape);
 
-            % If 'global', no additional arguments are allowed
-            if strcmp(type, 'global')
-                if nargin > 3
-                    error('Global amplitude shift does not take a size or position argument.');
-                end
-            else
-                % If type is not 'global', the 3rd argument (size) is required
-                if nargin < 4
-                    error('Size is required for shape: %s', type);
-                end
-
-                % Assign and validate the size argument
+            if ~strcmp(type, 'global')
+                if nargin < 4, error('Size is required for shape: %s', type); end
                 region_size = varargin{2};
-                if strcmp(type, 'circle') && ~isscalar(region_size)
-                    error('Circle size must be a scalar (radius).');
-                end
-                if strcmp(type, 'rectangle') && isscalar(region_size) && obj.dim == 2
-                    region_size = [region_size, region_size]; % Convert scalar to [w, h] if 2D
-                end
-                if strcmp(type, 'annulus') && (~isnumeric(region_size) || numel(region_size) ~= 2)
-                    error('Annulus size must be a two-element vector [inner_radius, outer_radius].');
-                end
-            end
-
-            % Assign position offset if provided
-            if nargin > 4
-                position = varargin{3};
-            end
-
-            region_size = round(region_size / obj.resolution);
-            position = round(position / obj.resolution);
-
-            % Apply modification (dimensionality checks happen inside applyMod)
-            if obj.dim == 1
-                obj.amplitude = obj.applyModification1D(obj.amplitude, value, type, region_size, position);
-            elseif obj.dim == 2
-                obj.amplitude = obj.applyModification2D(obj.amplitude, value, type, region_size, position);
+                if nargin > 4, position = varargin{3}; end
+                region_size = round(region_size / obj.resolution);
+                position = round(position / obj.resolution);
+                mask = osf.utils.genMask(size(obj.amplitude), type, region_size, position);
+                obj.amplitude(mask) = obj.amplitude(mask) + value;
             else
-                error('Dimensionality must be either 1 or 2.');
+                obj.amplitude = obj.amplitude + value;
+            end
+        end
+
+        function obj = setPhase(obj, value, varargin)
+            if nargin < 2
+                error('setPhase requires at least a value argument.');
+            end
+
+            shape = 'global';
+            region_size = [];
+            position = [];
+
+            if nargin > 2, shape = varargin{1}; end
+            type = obj.standardizeType(shape);
+
+            if ~strcmp(type, 'global')
+                if nargin < 4, error('Size is required for shape: %s', type); end
+                region_size = varargin{2};
+                if nargin > 4, position = varargin{3}; end
+                region_size = round(region_size / obj.resolution);
+                position = round(position / obj.resolution);
+                mask = osf.utils.genMask(size(obj.phase), type, region_size, position);
+                obj.phase(mask) = value;
+            else
+                obj.phase(:) = value;
+            end
+        end
+
+        function obj = addPhase(obj, value, varargin)
+            if nargin < 2
+                error('addPhase requires at least a value argument.');
+            end
+
+            shape = 'global';
+            region_size = [];
+            position = [];
+
+            if nargin > 2, shape = varargin{1}; end
+            type = obj.standardizeType(shape);
+
+            if ~strcmp(type, 'global')
+                if nargin < 4, error('Size is required for shape: %s', type); end
+                region_size = varargin{2};
+                if nargin > 4, position = varargin{3}; end
+                region_size = round(region_size / obj.resolution);
+                position = round(position / obj.resolution);
+                mask = osf.utils.genMask(size(obj.phase), type, region_size, position);
+                obj.phase(mask) = obj.phase(mask) + value;
+            else
+                obj.phase = obj.phase + value;
             end
         end
 
@@ -199,101 +170,6 @@ classdef Field
                 type = typeMap.(inputType);
             else
                 error('Invalid type: %s. Must be ''global'', ''rectangle'', ''circle'', or ''annulus''.', inputType);
-            end
-        end
-
-        function field = applyModification1D(~, field, value, type, region_size, position)
-            % Applies a phase or amplitude change to a 1D field based on shape type.
-            if isempty(position)
-                position = 0;
-            end
-
-            len = length(field);
-            middle = round(len / 2);  % Center of the field
-            pos_shift = round(position / 2);  % Adjusted for pixel index shift
-
-            switch type
-            case 'global'
-                field = field + value;
-
-            case 'rectangle'
-                if isempty(region_size)
-                    error('Rectangle size must be specified for 1D.');
-                end
-                rect_half = round(region_size / 2);
-                start_idx = max(1, middle + pos_shift - rect_half);
-                end_idx = min(len, middle + pos_shift + rect_half);
-                field(start_idx:end_idx) = field(start_idx:end_idx) + value;
-
-            case 'circle'
-                error('Circle modifications are not valid for 1D fields.');
-
-            case 'annulus'
-                error('Annulus modifications are not valid for 1D fields.');
-
-            otherwise
-                error('Unsupported type for 1D modification: %s', type);
-            end
-        end
-
-        function field = applyModification2D(~, field, value, type, region_size, position)
-            % Applies a phase or amplitude change to a 2D field based on shape type.
-            if isempty(position)
-                position = [0 0];
-            end
-
-            [height, width] = size(field);
-            middle_x = round(width / 2);
-            middle_y = round(height / 2);
-
-            % Apply position shift
-            pos_shift_x = round(position(1) / 2);
-            pos_shift_y = round(position(2) / 2);
-
-            center_x = middle_x + pos_shift_x;
-            center_y = middle_y + pos_shift_y;
-
-            switch type
-            case 'global'
-                field = field + value;
-
-            case 'rectangle'
-                if isempty(region_size)
-                    error('Rectangle size must be specified.');
-                end
-                if isscalar(region_size)
-                    region_size = [region_size, region_size]; % Convert scalar to [w, h]
-                end
-                half_w = round(region_size(1) / 2);
-                half_h = round(region_size(2) / 2);
-                start_x = max(1, center_x - half_w);
-                end_x = min(width, center_x + half_w);
-                start_y = max(1, center_y - half_h);
-                end_y = min(height, center_y + half_h);
-                field(start_y:end_y, start_x:end_x) = field(start_y:end_y, start_x:end_x) + value;
-
-            case 'circle'
-                if isempty(region_size) || ~isscalar(region_size)
-                    error('Circle size must be a scalar (radius).');
-                end
-                radius = round(region_size);
-                [X, Y] = meshgrid(1:width, 1:height);
-                mask = ((X - center_x).^2 + (Y - center_y).^2) <= radius^2;
-                field(mask) = field(mask) + value;
-
-            case 'annulus'
-                if isempty(region_size) || numel(region_size) ~= 2
-                    error('Annulus size must be a two-element vector [inner_radius, outer_radius].');
-                end
-                outer_radius = round(region_size(1));
-                inner_radius = round(region_size(2));
-                [X, Y] = meshgrid(1:width, 1:height);
-                mask = ((X - center_x).^2 + (Y - center_y).^2) <= outer_radius^2 & ...
-                ((X - center_x).^2 + (Y - center_y).^2) > inner_radius^2;
-                field(mask) = field(mask) + value;
-
-            otherwise
-                error('Unsupported type for 2D modification: %s', type);
             end
         end
 
@@ -429,7 +305,7 @@ classdef Field
         end
 
         function operationCheck(a, b)
-            if ~isa(a, 'Field') || ~isa(b, 'Field')
+            if ~isa(a, 'osf.Field') || ~isa(b, 'osf.Field')
                 error('Both operands must be of class Field.');
             end
             if a.dim ~= b.dim
@@ -443,25 +319,36 @@ classdef Field
         function result = plus(a, b)
             a.operationCheck(b);
             result = a;
-            result.setComplexField(a.getComplexField() + b.getComplexField());
+            result.amplitude = a.amplitude + b.amplitude;
+            result.phase = a.phase + b.phase;
         end
 
         function result = minus(a, b)
             a.operationCheck(b);
             result = a;
-            result.setComplexField(a.getComplexField() - b.getComplexField());
+            result.amplitude = a.amplitude - b.amplitude;
+            result.phase = a.phase - b.phase;
         end
 
         function result = times(a, b)
             a.operationCheck(b);
             result = a;
-            result.setComplexField(a.getComplexField() .* b.getComplexField());
+            result.amplitude = a.amplitude .* b.amplitude;
+            result.phase = a.phase .* b.phase;
+        end
+
+        function result = mtimes(a, b)
+            a.operationCheck(b);
+            result = a;
+            result.amplitude = a.amplitude .* b.amplitude;
+            result.phase = a.phase .* b.phase;
         end
 
         function result = rdivide(a, b)
             a.operationCheck(b);
             result = a;
-            result.setComplexField(a.getComplexField() ./ b.getComplexField());
+            result.amplitude = a.amplitude ./ b.amplitude;
+            result.phase = a.phase ./ b.phase;
         end
 
     end

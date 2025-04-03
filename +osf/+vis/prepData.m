@@ -33,11 +33,11 @@ function data = prepData(obj, plotType, varargin)
         if ~isempty(title)
             data.title = title;
         else
-            data.title = 'Field Intensity';
+            data.title = 'Field Amplitude';
         end
         data.xlabel = 'x (mm)';
         data.ylabel = 'y (mm)';
-        data.colorbarLabel = 'Intensity';
+        data.colorbarLabel = 'Amplitude';
 
     case {'phase', 'p', 'phase.unwrap', 'p.unwrap'}
         title = p.Results.title;

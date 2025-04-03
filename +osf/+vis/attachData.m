@@ -113,7 +113,7 @@ function attachData(ax, data)
         hold(ax, 'off');
 
         function plotLens(ax, x, elementHeight)
-            width = 0.001;
+            width = 0.002;
             t = linspace(0, pi, 20);
             X = [cos(t), -cos(t)] * width/2 + x;
             Y = [sin(t), -sin(t)] * elementHeight/2;

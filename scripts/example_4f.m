@@ -1,26 +1,23 @@
-clearvars; clc; close all;
 import osf.*;
 
 % Here we create a simulation with a 1um resolution and a 1mm by 1mm
 % window. It has a padding ratio of 2 meaning that, when propagation, it
 % will add 0 padding 2 times the size of length/resolution on all sides.
 % The wavelength is green and it is in 2 dimenions.
-sim = Sim(1e-6, 1e-3, paddingRatio=1, lambda=100e-9);
+sim = Sim(1e-6, 1e-3);
 
 % Add elements for 4f system.
-distAfterPreviousElement = 20e-3;
-focalLength = 20e-3;
-sim.addPlane(0e-3, 'name', 'Source');
-sim.addLens(distAfterPreviousElement, focalLength, 'name', 'Lens 1');
-sim.addPlane(20e-3, 'name', 'Fourier Plane');
-sim.addLens(20e-3, 20e-3, 'name', 'Lens 2');
-sim.addPlane(20e-3, 'name', 'Detector');
+sim.addPlane(0e-3, name='Source');
 
-% Show ray optics diagram of system.
-sim.disp();
+distAfterPreviousElement = 20e-3; focalLength = 20e-3;
+sim.addLens(distAfterPreviousElement, focalLength, name='Lens 1');
 
-% Print the simulation parameters to the console.
+sim.addPlane(20e-3, name='Fourier Plane');
+sim.addLens(20e-3, 20e-3, name='Lens 2');
+sim.addPlane(20e-3, name='Detector');
 sim.print();
+
+show(sim);
 
 % Add a rectangular phase object with a phase shift of pi to the field.
 rect_width = .2e-3;
