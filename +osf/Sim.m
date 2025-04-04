@@ -6,7 +6,7 @@ classdef Sim < handle
         fieldLength       % Size of the field of view (meters)
         samples           % Number of samples (always scalar)
         dim               % 1 or 2 - Dimensionality of the system
-        wavelength            % Wavelength of light in meters (default 632 nm)
+        wavelength        % Wavelength of light in meters (default 632 nm)
         paddingRatio      % Ratio of padding to add during propagation
     end
 

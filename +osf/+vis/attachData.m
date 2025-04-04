@@ -1,7 +1,7 @@
 function attachData(ax, data)
-    cla(ax);
+cla(ax);
 
-    switch data.meta.plotType
+switch data.meta.plotType
     case {'osf.Field.default', 'a', 'amplitude', 'phase', 'p', 'phase.unwrap', 'p.unwrap'}
         imagesc(data.xAxis, data.yAxis, data.imageData);
         colormap(gca, data.cmap);
@@ -49,9 +49,9 @@ function attachData(ax, data)
 
     otherwise
         error('Unhandled plotType: %s', data.meta.plotType);
-    end
+end
 
-    pause(.0001);
+pause(.0001);
 
     function attachSim(ax, data)
         axes(ax);
@@ -71,27 +71,37 @@ function attachData(ax, data)
             element = data.elements(i);
 
             switch element.type
-            case 'lens'
-                plotLens(ax, element.position, data.elementHeight);
-            case 'diffuser'
-                plotDiffuser(ax, element.position, data.elementHeight);
-            case 'plane'
-                plotPlane(ax, element.position, data.elementHeight);
-            otherwise
-                % warning('Unknown element type: %s', element.type);
-                plotUnknown(ax, element.position, data.elementHeight);
+                case 'lens'
+                    plotLens(ax, element.position, data.elementHeight);
+                case 'diffuser'
+                    plotDiffuser(ax, element.position, data.elementHeight);
+                case 'plane'
+                    plotPlane(ax, element.position, data.elementHeight);
+                case 'source'
+                    plotSource(ax, element.position, data.elementHeight);
+                case 'detector'
+                    plotDetector(ax, element.position, data.elementHeight);
+                case 'filter'
+                    plotFilter(ax, element.position, data.elementHeight);
+                case 'aperture'
+                    plotAperture(ax, element.position, data.elementHeight);
+                case 'grating'
+                    plotGrating(ax, element.position, data.elementHeight);
+                otherwise
+                    % warning('Unknown element type: %s', element.type);
+                    plotUnknown(ax, element.position, data.elementHeight);
             end
 
             text(ax, element.position - 0.000, data.elementHeight / 2 + data.labelOffset, ...
-            element.name, 'HorizontalAlignment', 'center', 'FontSize', 12, ...
-            'FontWeight', 'bold', 'Rotation', 45);
+                element.name, 'HorizontalAlignment', 'center', 'FontSize', 12, ...
+                'FontWeight', 'bold', 'Rotation', 45);
         end
 
         xlim(ax, data.axisLimits(1:2));
         ylim(ax, data.axisLimits(3:4));
 
         plot(ax, [min(data.componentCenters), max(data.componentCenters)], ...
-        [data.baselineY, data.baselineY], 'k', 'LineWidth', 2, 'Tag', 'theme');
+            [data.baselineY, data.baselineY], 'k', 'LineWidth', 2, 'Tag', 'theme');
 
         for i = 1:length(data.componentCenters)
             xTick = data.componentCenters(i);
@@ -100,17 +110,35 @@ function attachData(ax, data)
             if i < length(data.componentCenters)
                 midX = (data.componentCenters(i) + data.componentCenters(i+1)) / 2;
                 text(ax, midX, data.baselineY - 0.01, sprintf('%.0fmm', data.distances(i+1)*1000), ...
-                'HorizontalAlignment', 'center', 'FontSize', 12, 'FontWeight', 'bold');
+                    'HorizontalAlignment', 'center', 'FontSize', 12, 'FontWeight', 'bold');
             end
         end
 
         % --- Paraxial Ray Overlay ---
-        plot(ax, data.paraxial.dist, data.paraxial.marginalRay, 'r', 'LineWidth', 0.5);
-        plot(ax, data.paraxial.dist, -data.paraxial.marginalRay, 'r', 'LineWidth', 0.5);
-        plot(ax, data.paraxial.dist, data.paraxial.chiefRay, 'b', 'LineWidth', 0.5);
-        plot(ax, data.paraxial.dist, -data.paraxial.chiefRay, 'b', 'LineWidth', 0.5);
+        plot(ax, data.paraxial.dist, data.paraxial.marginalRay, 'r', 'LineWidth', 1.5);
+        plot(ax, data.paraxial.dist, -data.paraxial.marginalRay, 'r', 'LineWidth', 1.5);
+        plot(ax, data.paraxial.dist, data.paraxial.chiefRay, 'b', 'LineWidth', 1.5);
+        plot(ax, data.paraxial.dist, -data.paraxial.chiefRay, 'b', 'LineWidth', 1.5);
 
         hold(ax, 'off');
+
+        function plotSource(ax, x, elementHeight)
+            width = 0.002;
+            rectangle(ax, 'Position', [x - width/2, -elementHeight/2, width, elementHeight], ...
+                'FaceColor', [0.2 0.6 1.0], 'EdgeColor', 'k', 'LineWidth', 1.5);
+        end
+
+        function plotDetector(ax, x, elementHeight)
+            width = 0.002;
+            rectangle(ax, 'Position', [x - width/2, -elementHeight/2, width, elementHeight], ...
+                'FaceColor', [0.0 0.7 0.2], 'EdgeColor', 'k', 'LineWidth', 1.5);
+        end
+
+        function plotFilter(ax, x, elementHeight)
+            width = 0.002;
+            rectangle(ax, 'Position', [x - width/2, -elementHeight/2, width, elementHeight], ...
+                'FaceColor', [0.6 0.0 0.6], 'EdgeColor', 'k', 'LineWidth', 1.5);
+        end
 
         function plotLens(ax, x, elementHeight)
             width = 0.002;
@@ -120,10 +148,43 @@ function attachData(ax, data)
             fill(ax, X, Y, [.8 .8 .8], 'EdgeColor', 'k', 'LineWidth', 2);
         end
 
+        function plotGrating(ax, x, elementHeight)
+            width = 0.002;
+            numLines = 10;
+            left = x - width/2;
+            stripeWidth = width / numLines;
+            yBottom = -elementHeight/2;
+
+            for i = 0:numLines-1
+                stripeX = left + i * stripeWidth;
+                color = mod(i, 2) == 0;
+                rectangle(ax, 'Position', [stripeX, yBottom, stripeWidth, elementHeight], ...
+                    'FaceColor', color * [1 1 1], 'EdgeColor', 'none');
+            end
+
+            % Outline box around the grating
+            rectangle(ax, 'Position', [left, yBottom, width, elementHeight], ...
+                'EdgeColor', 'k', 'LineWidth', 1.5);
+        end
+
+        function plotAperture(ax, x, elementHeight)
+            width = 0.002;
+            yBottom = -elementHeight/2;
+
+            % Draw the full aperture block
+            rectangle(ax, 'Position', [x - width/2, yBottom, width, elementHeight], ...
+                'FaceColor', [0.3 0.3 0.3], 'EdgeColor', 'k', 'LineWidth', 1.5);
+
+            % Overlay a circle to suggest the aperture opening
+            radius = elementHeight * 0.2;
+            theta = linspace(0, 2*pi, 100);
+            fill(ax, x + radius*cos(theta), radius*sin(theta), 'w', 'EdgeColor', 'none');
+        end
+
         function plotDiffuser(ax, x, elementHeight)
             width = 0.002;
             rectangle(ax, 'Position', [x - width/2, -elementHeight/2, width, elementHeight], ...
-            'FaceColor', 'g', 'EdgeColor', 'k', 'LineWidth', 1.5);
+                'FaceColor', 'g', 'EdgeColor', 'k', 'LineWidth', 1.5);
         end
 
         function plotPlane(ax, x, elementHeight)
@@ -133,7 +194,7 @@ function attachData(ax, data)
         function plotUnknown(ax, x, elementHeight)
             width = 0.003;
             rectangle(ax, 'Position', [x - width/2, -elementHeight/2, width, elementHeight], ...
-            'FaceColor', 'r', 'EdgeColor', 'k', 'LineWidth', 1.5);
+                'FaceColor', 'r', 'EdgeColor', 'k', 'LineWidth', 1.5);
         end
     end
 

@@ -274,9 +274,9 @@ classdef Field
             if ismember(plotType, {'default'})
                 osf.Dashboard([2,1], p.Unmatched).show(obj, 'amplitude').show(obj, phaseType);
             elseif ismember(plotType, {'amplitude', 'a'})
-                osf.show(obj, 'amplitude');
+                osf.show(obj, 'amplitude', p.Unmatched);
             elseif ismember(plotType, {'phase', 'p'})
-                osf.show(obj, 'phase');
+                osf.show(obj, 'phase', p.Unmatched);
             else
                 error('Unsupported plotType %s', plotType);
             end

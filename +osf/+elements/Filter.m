@@ -15,7 +15,7 @@ classdef Filter < osf.elements.Element
             % Constructor for Filter class
             p = inputParser;
             addRequired(p, 'field', @(x) isa(x, 'osf.Field'));
-            addParameter(p, 'name', '', @(x) ischar(x) || isstring(x));
+            addParameter(p, 'name', 'Filter', @(x) ischar(x) || isstring(x));
             addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
             addParameter(p, 'operation', 'mult', @(x) ischar(x) || isstring(x) && ismember(x, {'mult', 'add'}));
 

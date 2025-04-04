@@ -6,7 +6,7 @@ import osf.*;
 
 % Start by creating a simulation and defining the spatial resolution and
 % size of the window respectively.
-sim = Sim(5e-6, 5e-3);
+sim = Sim(10e-6, 5e-3);
 
 % Add the source with the wavelength in meters. If nothing is entered, it
 % will default to 632nm. The source plane will always be at the origin.
