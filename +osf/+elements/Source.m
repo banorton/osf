@@ -26,7 +26,7 @@ classdef Source < osf.elements.Element
         end
 
         function field = apply(obj, field)
-            field = field.newField() * field;
+            field = field.newField().setPhase(1) * field;
         end
 
         function field = phaseFunction(obj, varargin)

@@ -23,9 +23,13 @@ function mask = genMask(arraySize, type, regionSize, position)
 
         switch type
             case 'rectangle'
+                if isscalar(regionSize)
+                    regionSize = [regionSize];
+                end
                 hw = round(regionSize(1) / 2);
                 mask = false(1, arrayLength);
                 mask(max(1, cx - hw):min(arrayLength, cx + hw)) = true;
+
             otherwise
                 error('Unsupported shape type for 1D: %s', type);
         end
@@ -38,18 +42,28 @@ function mask = genMask(arraySize, type, regionSize, position)
 
         switch type
             case 'rectangle'
+                if isscalar(regionSize)
+                    regionSize = [regionSize regionSize];
+                end
                 hw = round(regionSize(1) / 2);
                 hh = round(regionSize(2) / 2);
                 mask = false(h, w);
                 mask(max(1, cy - hh):min(h, cy + hh), max(1, cx - hw):min(w, cx + hw)) = true;
 
             case 'circle'
-                radius = regionSize(1);
+                if isscalar(regionSize)
+                    radius = regionSize;
+                else
+                    radius = regionSize(1);
+                end
                 mask = (X - cx).^2 + (Y - cy).^2 <= radius^2;
 
             case 'annulus'
-                r1 = regionSize(1); % inner
-                r2 = regionSize(2); % outer
+                if isscalar(regionSize)
+                    error('Annulus requires regionSize = [innerRadius, outerRadius]');
+                end
+                r1 = regionSize(1);
+                r2 = regionSize(2);
                 d2 = (X - cx).^2 + (Y - cy).^2;
                 mask = (d2 <= r2^2) & (d2 > r1^2);
 

@@ -7,20 +7,22 @@ classdef Grating < osf.elements.Element
         dim            % Dimensionality of the element (1 or 2)
 
         linesPerMM  % Lines per mm (scalar for 1D, [linesX, linesY] for 2D)
-        gratingType        % Grating type ('sinusoidal' or 'blazed')
+        gratingType % Grating type ('sinusoidal' or 'blazed')
         blazeAngle  % Blaze angle (only for blazed grating)
         type        % Target field property to apply grating ('amplitude' or 'phase')
     end
 
     methods
+
         function obj = Grating(linesPerMM, varargin)
             % Parse optional arguments
             p = inputParser;
-            addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
-            addOptional(p, 'gratingType', 'sinusoidal', @(x) ismember(x, {'sinusoidal', 's', 'sine', 'blazed'}));
-            addOptional(p, 'blazeAngle', 0, @(x) isnumeric(x) && x >= 0);
-            addOptional(p, 'type', 'amplitude', @(x) ismember(x, {'amplitude', 'phase'}));
             addRequired(p, 'linesPerMM', @(x) isnumeric(x) && (isscalar(x) || numel(x) == 2));
+            addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
+            addParameter(p, 'gratingType', 'sinusoidal', ...
+                @(x) ischar(x) && ismember(lower(x), {'sinusoidal', 's', 'sine', 'blazed', 'binary'}));
+            addParameter(p, 'blazeAngle', 0, @(x) isnumeric(x) && x >= 0);
+            addParameter(p, 'type', 'amplitude', @(x) ismember(x, {'amplitude', 'phase'}));
             parse(p, linesPerMM, varargin{:});
 
             obj.dim = p.Results.dim;
@@ -30,18 +32,23 @@ classdef Grating < osf.elements.Element
             obj.apertureParams = struct();
             obj.type = p.Results.type;
             obj.linesPerMM = p.Results.linesPerMM;
+            obj.gratingType = obj.standardizeType(p.Results.gratingType);
+            obj.blazeAngle = p.Results.blazeAngle;
 
             if ~ismember(obj.dim, [1, 2])
                 error('Dimensionality must be either 1 or 2.');
             end
-
-            obj.gratingType = obj.standardizeType(p.Results.gratingType);
-            obj.blazeAngle = p.Results.blazeAngle;
         end
 
         function type = standardizeType(~, inputType)
             % Maps multiple aliases to a single canonical type
-            typeMap = struct('sinusoidal', 'sinusoidal', 's', 'sinusoidal', 'sine', 'sinusoidal', 'blazed', 'blazed');
+            typeMap = struct( ...
+                'sinusoidal', 'sinusoidal', ...
+                's', 'sinusoidal', ...
+                'sine', 'sinusoidal', ...
+                'blazed', 'blazed', ...
+                'binary', 'binary' ...
+            );
             if isfield(typeMap, inputType)
                 type = typeMap.(inputType);
             else
@@ -62,23 +69,31 @@ classdef Grating < osf.elements.Element
         end
 
         function grating = createGrating1D(obj, x)
-            % Create 1D grating
-            frequency = obj.linesPerMM * 1e3; % Convert to lines per meter
-            if strcmp(obj.gratingType, 'sinusoidal')
-                grating = 0.5 + 0.5 * sin(2 * pi * frequency * x);
-            else % Blazed grating
-                grating = mod(frequency * x, 1);
+            frequency = obj.linesPerMM * 1e3; % lines/m
+            switch obj.gratingType
+                case 'sinusoidal'
+                    grating = 0.5 + 0.5 * sin(2 * pi * frequency * x);
+                case 'blazed'
+                    grating = mod(frequency * x, 1);
+                case 'binary'
+                    grating = mod(floor(frequency * x), 2);
+                otherwise
+                    error('Unsupported grating type: %s', obj.gratingType);
             end
         end
 
         function grating = createGrating2D(obj, X, Y)
-            % Create 2D grating
-            frequencyX = obj.linesPerMM(1) * 1e3; % Convert to lines per meter
+            frequencyX = obj.linesPerMM(1) * 1e3;
             frequencyY = obj.linesPerMM(2) * 1e3;
-            if strcmp(obj.gratingType, 'sinusoidal')
-                grating = 0.5 + 0.5 * sin(2 * pi * (frequencyX * X + frequencyY * Y));
-            else % Blazed grating
-                grating = mod(frequencyX * X + frequencyY * Y, 1);
+            switch obj.gratingType
+                case 'sinusoidal'
+                    grating = 0.5 + 0.5 * sin(2 * pi * (frequencyX * X + frequencyY * Y));
+                case 'blazed'
+                    grating = mod(frequencyX * X + frequencyY * Y, 1);
+                case 'binary'
+                    grating = mod(floor(frequencyX * X + frequencyY * Y), 2);
+                otherwise
+                    error('Unsupported grating type: %s', obj.gratingType);
             end
         end
 
@@ -97,5 +112,6 @@ classdef Grating < osf.elements.Element
             % No specific phase function for a general filter
             phaseShift = 0;
         end
+
     end
 end

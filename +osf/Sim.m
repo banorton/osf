@@ -299,6 +299,61 @@ classdef Sim < handle
             end
         end
 
+        function img = propScan(obj, field, numSteps, varargin)
+            p = inputParser;
+            addParameter(p, 'live', false, @islogical);
+            parse(p, varargin{:});
+            live = p.Results.live;
+
+            totalDistance = sum(obj.distances);
+            dz = totalDistance / numSteps;
+            % fprintf('Total propagation steps: %d (dz = %.3e m)\n', numSteps, dz);
+
+            img = zeros(obj.samples, numSteps);
+            currentDistance = 0;
+            nextElementIdx = 1;
+
+            if live
+                f = figure('Position', [313 208 1315 603]);
+            end
+
+            for step = 1:numSteps
+                % fprintf('Propagation step %d of %d\n', step, numSteps);
+
+                intensity = abs(field.getComplexField()).^2;
+                if obj.dim == 1
+                    vec = intensity(:);
+                else
+                    vec = mean(intensity, 2);
+                end
+
+                vec = vec / max(vec(:) + eps);
+                img(:, step) = vec;
+
+                if obj.dim == 1
+                    field = obj.angularSpectrumPropagation1D(field, dz);
+                else
+                    field = obj.angularSpectrumPropagation(field, dz);
+                end
+
+                currentDistance = currentDistance + dz;
+
+                while nextElementIdx <= numel(obj.distances) && ...
+                    currentDistance >= sum(obj.distances(1:nextElementIdx))
+                    field = obj.elements{nextElementIdx}.apply(field);
+                    nextElementIdx = nextElementIdx + 1;
+                end
+
+                if live
+                    imagesc(img);
+                    colormap turbo;
+                    osf.vis.applyTheme(f);
+                    axis off;
+                    drawnow;
+                end
+            end
+        end
+
         %% PROPAGATION CALCULATION METHODS
 
         function field = angularSpectrumPropagation(obj, field, z)
@@ -420,7 +475,7 @@ classdef Sim < handle
         function print(obj)
             %   Prints simulation parameters in a nicely formatted manner.
             %   Length measurements are converted to mm (or um for resolution)
-            %   with no digits after the decimal, and element names are printed in a 
+            %   with no digits after the decimal, and element names are printed in a
             %   bracketed list. If an element's name is empty, its type is used instead.
 
             distances_mm   = obj.distances * 1e3;
