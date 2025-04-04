@@ -133,8 +133,8 @@ function data = prepData(obj, plotType, varargin)
         data.yAxis = 1:size(obj, 1);
         data.cmap = 'gray';
         data.title = title;
-        data.xlabel = 'Column';
-        data.ylabel = 'Row';
+        data.xlabel = '';
+        data.ylabel = '';
         data.colorbarLabel = 'Value';
 
     otherwise

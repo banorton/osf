@@ -1,8 +1,7 @@
-clearvars; clc; close all;
-addpath('../');
-%%
+import osf.*;
 
 import osf.Sim;
+
 sim = Sim(1e-6, 1e-3, 'paddingRatio', 2, 'lambda', 532e-9, 'dim', 2);
 
 sim.addPlane(0e-3, 'name', 'Source');

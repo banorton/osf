@@ -256,12 +256,14 @@ classdef Field
             obj.phase = osf.utils.phaseUnwrap(obj.phase);
         end
 
-        function obj = show(obj, varargin)
+        function obj = show(obj, plotType, varargin)
             p = inputParser;
+            addOptional(p, 'plotType', 'default', @(x) ismember(x, {'default', 'amplitude', 'a', 'phase', 'p'}));
             addParameter(p, 'unwrap', true, @islogical);
             p.KeepUnmatched = true;
 
-            parse(p, varargin{:});
+            parse(p, plotType, varargin{:});
+            plotType = p.Results.plotType;
             unwrapFlag = p.Results.unwrap;
 
             phaseType = 'phase';
@@ -269,7 +271,15 @@ classdef Field
                 phaseType = 'phase.unwrap';
             end
 
-            osf.Dashboard([2,1], p.Unmatched).show(obj, 'amplitude').show(obj, phaseType);
+            if ismember(plotType, {'default'})
+                osf.Dashboard([2,1], p.Unmatched).show(obj, 'amplitude').show(obj, phaseType);
+            elseif ismember(plotType, {'amplitude', 'a'})
+                osf.show(obj, 'amplitude');
+            elseif ismember(plotType, {'phase', 'p'})
+                osf.show(obj, 'phase');
+            else
+                error('Unsupported plotType %s', plotType);
+            end
         end
 
         function obj = img(obj, path, varargin)

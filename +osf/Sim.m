@@ -166,7 +166,7 @@ classdef Sim < handle
                     end
 
                     fprintf('Propagated to element %d (%s) at distance: %.3e m\n', i, elementTitle, cumulativeDist);
-                    field.show('title', sprintf('%s\nDist: %.0f mm', elementTitle, 1000 * cumulativeDist), 'figPosition', [750 200 450 700]);
+                    field.show(title=sprintf('%s\nDist: %.0f mm', elementTitle, 1000 * cumulativeDist), figPosition=[750 200 450 700]);
                 end
             end
 
