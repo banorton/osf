@@ -1,19 +1,36 @@
 classdef Sim < handle
+    % Sim class for managing optical simulations.
+    % This class handles optical elements, field propagation, and field creation
+    % for Fourier optics simulations.
+
     properties
-        elements          % Array of Element objects
-        distances         % Array of distances between elements
-        resolution        % Size of each pixel (meters)
-        fieldLength       % Size of the field of view (meters)
-        samples           % Number of samples (always scalar)
-        dim               % 1 or 2 - Dimensionality of the system
-        wavelength        % Wavelength of light in meters (default 632 nm)
-        paddingRatio      % Ratio of padding to add during propagation
+        elements          % Cell array of optical element objects
+        distances         % Array of distances (meters) between consecutive elements
+        resolution        % Pixel size (meters)
+        fieldLength       % Field of view (meters)
+        samples           % Number of samples (scalar)
+        dim               % Dimensionality (1 for 1D or 2 for 2D)
+        wavelength        % Wavelength (meters; default 632e-9)
+        paddingRatio      % Ratio of zero-padding added during propagation
     end
 
     methods
 
-        %% CONSTRUCTOR
+        %% Constructor
         function obj = Sim(resolution, fieldLength, varargin)
+            % Constructs a new simulation.
+            %
+            % Required
+            %   resolution : Pixel size in meters.
+            %   fieldLength : Field of view in meters.
+            %
+            % Parameters (Name-Value Pairs)
+            %   'dim' : Dimensionality (1 or 2; default: 2).
+            %   'wavelength' : Wavelength in meters (default: 632e-9).
+            %   'paddingRatio' : Padding ratio for propagation (default: 1).
+            %
+            % Example
+            %   sim = Sim(5e-6, 1e-3, 'dim', 2);
             p = inputParser;
             addRequired(p, 'resolution', @isnumeric);
             addRequired(p, 'fieldLength', @isnumeric);
@@ -22,66 +39,181 @@ classdef Sim < handle
             addParameter(p, 'paddingRatio', 1, @isnumeric);
             parse(p, resolution, fieldLength, varargin{:});
 
-            obj.resolution = p.Results.resolution;
-            obj.fieldLength = p.Results.fieldLength;
-            obj.dim = p.Results.dim;
-            obj.wavelength = p.Results.wavelength;
-            obj.paddingRatio = p.Results.paddingRatio;
+            obj.resolution    = p.Results.resolution;
+            obj.fieldLength   = p.Results.fieldLength;
+            obj.dim           = p.Results.dim;
+            obj.wavelength    = p.Results.wavelength;
+            obj.paddingRatio  = p.Results.paddingRatio;
 
-            obj.samples = round(obj.fieldLength / obj.resolution);
-            obj.elements = {};
-            obj.distances = [];
+            obj.samples       = round(obj.fieldLength / obj.resolution);
+            obj.elements      = {};
+            obj.distances     = [];
         end
 
-        %% ELEMENT MANAGEMENT
+        %% Element Management
 
         function addElement(obj, dist, element)
-            % Add an optical element to the system with a specific distance
-            % from the previous element.
-
+            % Adds an optical element to the simulation.
+            %
+            % Required
+            %   element : Optical element object to add.
+            %
+            % Optionals
+            %   dist : Distance in meters from the previous element (default: 0).
             if nargin < 3
                 dist = 0;
             end
 
             if obj.dim ~= element.dim
-                error('Dimensionality of element must match the system dimensionality.');
+                error('Element dimensionality must match the simulation system.');
             end
 
             obj.elements{end+1} = element;
             obj.distances(end+1) = dist;
         end
 
+        function removeElement(obj, identifier)
+            % Removes an element by index or name from the simulation and updates lens numbering.
+            %
+            % Required
+            %   identifier : Either an integer index of the element to remove or a string representing the element's name.
+
+            if isnumeric(identifier)
+                index = identifier;
+            elseif ischar(identifier) || isstring(identifier)
+                index = [];
+                for i = 1:numel(obj.elements)
+                    if isprop(obj.elements{i}, 'name') && strcmp(obj.elements{i}.name, char(identifier))
+                        index = i;
+                        break;
+                    end
+                end
+                if isempty(index)
+                    error('Element with name "%s" not found.', char(identifier));
+                end
+            else
+                error('Identifier must be numeric (index) or a string (element name).');
+            end
+
+            if ~(isscalar(index) && isnumeric(index) && index == floor(index))
+                error('Index must be an integer scalar.');
+            end
+            if index < 1 || index > numel(obj.elements)
+                error('Invalid element index. Must be between 1 and %d.', numel(obj.elements));
+            end
+
+            obj.elements(index) = [];
+            obj.distances(index) = [];
+
+            lensCount = 0;
+            for i = 1:numel(obj.elements)
+                if isprop(obj.elements{i}, 'type') && strcmp(obj.elements{i}.type, 'lens')
+                    lensCount = lensCount + 1;
+                    obj.elements{i}.name = sprintf('Lens %d', lensCount);
+                end
+            end
+        end
+
         function lens = addLens(obj, dist, focalLength, varargin)
-            lens = osf.elements.Lens(focalLength, 'dim', obj.dim, varargin{:});
+            % Creates and adds a lens element.
+            %
+            % Required
+            %   focalLength : Focal length of the lens in meters.
+            %
+            % Optionals
+            %   dist : Distance in meters from the previous element.
+            %
+            % Parameters (Name-Value Pairs)
+            %   Additional name-value pairs for the lens.
+
+            count = 0;
+            for i = 1:numel(obj.elements)
+                if isprop(obj.elements{i}, 'type') && strcmp(obj.elements{i}.type, 'lens')
+                    count = count + 1;
+                end
+            end
+
+            lensName = sprintf('Lens %d', count + 1);
+            lens = osf.elements.Lens(focalLength, 'dim', obj.dim, 'name', lensName, varargin{:});
             obj.addElement(dist, lens);
         end
 
         function diffuser = addDiffuser(obj, dist, roughness, correlationLength, varargin)
+            % Creates and adds a diffuser element.
+            %
+            % Required
+            %   roughness : Surface roughness in meters.
+            %   correlationLength : Correlation length in meters.
+            %
+            % Optionals
+            %   dist : Distance in meters from the previous element.
+            %
+            % Parameters (Name-Value Pairs)
+            %   Additional name-value pairs for the diffuser.
             diffuser = osf.elements.Diffuser(roughness, correlationLength, 'dim', obj.dim, varargin{:});
             obj.addElement(dist, diffuser);
         end
 
         function aperture = addAperture(obj, dist, varargin)
+            % Creates and adds an aperture element.
+            %
+            % Required
+            %   dist : Distance in meters from the previous element.
+            %
+            % Parameters (Name-Value Pairs)
+            %   Additional name-value pairs for the aperture.
             aperture = osf.elements.Aperture('dim', obj.dim, varargin{:});
             obj.addElement(dist, aperture);
         end
 
         function plane = addPlane(obj, dist, varargin)
+            % Creates and adds a plane element (e.g., detector plane).
+            %
+            % Required
+            %   dist : Distance in meters from the previous element.
+            %
+            % Parameters (Name-Value Pairs)
+            %   Additional name-value pairs (e.g., 'name' for labeling).
             plane = osf.elements.Plane('dim', obj.dim, varargin{:});
             obj.addElement(dist, plane);
         end
 
         function filter = addFilter(obj, dist, field, varargin)
+            % Creates and adds a filter element.
+            %
+            % Required
+            %   dist : Distance in meters from the previous element.
+            %   field : Field object defining the filter characteristics.
+            %
+            % Parameters (Name-Value Pairs)
+            %   Additional name-value pairs for filter configuration.
             filter = osf.elements.Filter(field, varargin{:});
             obj.addElement(dist, filter);
         end
 
         function grating = addGrating(obj, dist, linesPerMM, varargin)
+            % Creates and adds a grating element.
+            %
+            % Required
+            %   linesPerMM : Grating spatial frequency in lines per mm.
+            %
+            % Optionals
+            %   dist : Distance in meters from the previous element.
+            %
+            % Parameters (Name-Value Pairs)
+            %   Additional name-value pairs for the grating.
             grating = osf.elements.Grating(linesPerMM, 'dim', obj.dim, varargin{:});
             obj.addElement(dist, grating);
         end
 
         function source = addSource(obj, varargin)
+            % Creates and adds a source element.
+            %
+            % Optionals
+            %   wavelength : Wavelength in meters. If not provided, defaults to obj.wavelength.
+            %
+            % Parameters (Name-Value Pairs)
+            %   Additional name-value pairs for the source.
             p = inputParser;
             p.KeepUnmatched = true;
             addOptional(p, 'wavelength', []);
@@ -99,6 +231,14 @@ classdef Sim < handle
         end
 
         function detector = addDetector(obj, dist, varargin)
+            % Creates and adds a detector element.
+            %
+            % Required
+            %   dist : Distance in meters from the previous element.
+            %
+            % Parameters (Name-Value Pairs)
+            %   'resolution' : Resolution as [Nx, Ny] (default: [samples, samples]).
+            %   'pixelPitch' : Size of a pixel (default: simulation resolution).
             p = inputParser;
             p.KeepUnmatched = true;
             addParameter(p, 'resolution', [obj.samples, obj.samples]);
@@ -109,26 +249,35 @@ classdef Sim < handle
             obj.addElement(dist, detector);
         end
 
-        %% PROPAGATION METHODS
-        % These methods are typically wrappers around the propagation calculation methods.
+        %% Propagation Methods
 
         function result = propToIndex(obj, field, targetIndex, varargin)
+            % Propagates a field to a specified element index.
+            %
+            % Required
+            %   field : Field object to propagate.
+            %   targetIndex : Target element index (integer).
+            %
+            % Optionals
+            %   'verbose' : Logical flag for verbose output (default: false).
+            %   'propMethod' : Propagation method ('as' for angular spectrum or 'rs' for Rayleigh-Sommerfeld; default: 'as').
+            %   'collect' : Logical flag to collect and return fields at each step (default: false).
             p = inputParser;
             addParameter(p, 'verbose', false, @(x) islogical(x) || isnumeric(x));
             addParameter(p, 'propMethod', 'as', @(x) ischar(x) && ismember(x, {'as', 'rs'}));
             addParameter(p, 'collect', false, @islogical);
             parse(p, varargin{:});
 
-            verbose = p.Results.verbose;
+            verbose    = p.Results.verbose;
             propMethod = p.Results.propMethod;
-            collect = p.Results.collect;
+            collect    = p.Results.collect;
 
             if targetIndex > length(obj.elements)
-                error('Target index exceeds the number of elements in the system.');
+                error('Target index exceeds number of elements.');
             end
 
             if verbose
-                fprintf('Starting propagation through all elements in the system\n');
+                fprintf('Starting propagation through %d elements\n', targetIndex);
             end
 
             cumulativeDist = 0;
@@ -150,7 +299,6 @@ classdef Sim < handle
                     end
                 end
                 cumulativeDist = cumulativeDist + segmentDist;
-
                 field = obj.elements{i}.apply(field);
 
                 if collect
@@ -164,9 +312,9 @@ classdef Sim < handle
                     else
                         elementTitle = elementName;
                     end
-
-                    fprintf('Propagated to element %d (%s) at distance: %.3e m\n', i, elementTitle, cumulativeDist);
-                    field.show(title=sprintf('%s\nDist: %.0f mm', elementTitle, 1000 * cumulativeDist), figPosition=[750 200 450 700]);
+                    fprintf('Propagated to %s at %.3e m\n', elementTitle, cumulativeDist);
+                    field.show(title=sprintf('%s\nDistance: %.0f mm', elementTitle, 1000 * cumulativeDist), ...
+                    figPosition=[750 200 450 700]);
                 end
             end
 
@@ -178,6 +326,13 @@ classdef Sim < handle
         end
 
         function result = prop(obj, field, varargin)
+            % Propagates a field through all elements.
+            %
+            % Required
+            %   field : Field object to propagate.
+            %
+            % Optionals
+            %   All optional parameters are forwarded to propToIndex.
             lastElementIndex = length(obj.elements);
             if lastElementIndex > 0
                 result = obj.propToIndex(field, lastElementIndex, varargin{:});
@@ -185,8 +340,15 @@ classdef Sim < handle
         end
 
         function [field, currDist] = propToDist(obj, field, targetDist, varargin)
-            % Propagate to a specific distance in the system
-
+            % Propagates a field to a specific distance.
+            %
+            % Required
+            %   field : Field object to propagate.
+            %   targetDist : Target propagation distance in meters.
+            %
+            % Optionals
+            %   'verbose' : Logical flag for verbose output (default: false).
+            %   'propMethod' : Propagation method ('as' or 'rs'; default: 'as').
             p = inputParser;
             addRequired(p, 'field', @(x) isa(x, 'Field'));
             addRequired(p, 'targetDist', @isnumeric);
@@ -194,17 +356,15 @@ classdef Sim < handle
             addParameter(p, 'propMethod', 'as', @(x) ischar(x) && ismember(x, {'as', 'rs'}));
             parse(p, field, targetDist, varargin{:});
 
-            verbose = p.Results.verbose;
+            verbose    = p.Results.verbose;
             propMethod = p.Results.propMethod;
-
-            currDist = 0;
+            currDist   = 0;
 
             if verbose
-                fprintf('Starting propagation from distance 0 to target distance: %.3e m\n', targetDist);
+                fprintf('Propagating from 0 to %.3e m\n', targetDist);
             end
 
             if isempty(obj.elements)
-                % If no elements, propagate directly to target distance
                 if targetDist > 0
                     if obj.dim == 1
                         if strcmp(propMethod, 'as')
@@ -220,27 +380,22 @@ classdef Sim < handle
                         end
                     end
                     currDist = targetDist;
-
                     if verbose
-                        fprintf('Propagated to distance: %.3e m (no elements present)\n', currDist);
-                        % field.disp('title', 'Field after propagation (no elements)');
+                        fprintf('Propagated %.3e m (no elements present)\n', currDist);
                         field.show('title', 'Field after propagation (no elements)');
                     end
                 end
                 return;
             end
 
-            % Determine the last element index before the target distance
             cumulativeDist = cumsum(obj.distances);
             lastElementIndex = find(cumulativeDist <= targetDist, 1, 'last');
 
-            % Propagate to last element before target distance
             if ~isempty(lastElementIndex)
                 field = obj.propToIndex(field, lastElementIndex, 'verbose', verbose, 'propMethod', propMethod);
                 currDist = cumulativeDist(lastElementIndex);
             end
 
-            % Propagate the remaining distance to reach the target
             if targetDist > currDist
                 remainingDist = targetDist - currDist;
                 if obj.dim == 1
@@ -257,49 +412,60 @@ classdef Sim < handle
                     end
                 end
                 currDist = targetDist;
-
                 if verbose
-                    fprintf('Propagated remaining distance to target: %.3e m\n', currDist);
-                    % field.disp('title', 'Field after propagation to target distance');
-                    field.show('title', 'Field after propagation to target distance');
+                    fprintf('Propagated remaining %.3e m to reach target\n', remainingDist);
+                    field.show('title', 'Field after reaching target distance');
                 end
             end
         end
 
         function field = propToElement(obj, field, targetName, varargin)
-            % Propagate to an element by its name
-
+            % Propagates a field to a specified element by name.
+            %
+            % Required
+            %   field : Field object to propagate.
+            %   targetName : Name of the target element (string).
+            %
+            % Optionals
+            %   'verbose' : Logical flag for verbose output (default: false).
+            %   'propMethod' : Propagation method ('as' or 'rs'; default: 'as').
             p = inputParser;
             addRequired(p, 'field', @(x) isa(x, 'osf.Field'));
             addRequired(p, 'targetName', @ischar);
             addParameter(p, 'verbose', false, @islogical);
             addParameter(p, 'propMethod', 'as', @(x) ischar(x) && ismember(x, {'as', 'rs'}));
             parse(p, field, targetName, varargin{:});
-            verbose = p.Results.verbose;
+            verbose    = p.Results.verbose;
             propMethod = p.Results.propMethod;
 
             elementNames = cellfun(@(e) e.name, obj.elements, 'UniformOutput', false);
             elementIndex = find(strcmp(elementNames, targetName), 1);
-
             if isempty(elementIndex)
-                error('Element with the specified name not found.');
+                error('Element with name "%s" not found.', targetName);
             end
 
             if verbose
-                fprintf('Starting propagation to element named: %s\n', targetName);
+                fprintf('Propagating to element "%s"\n', targetName);
             end
 
             field = obj.propToIndex(field, elementIndex, 'verbose', verbose, 'propMethod', propMethod);
 
             if verbose
                 cumulativeDist = sum(obj.distances(1:elementIndex));
-                fprintf('Finished propagating to element named: %s at distance: %.3e m\n', targetName, cumulativeDist);
-                % field.disp('title', sprintf('Field after propagation to element (%s), Distance: %.3e m', targetName, cumulativeDist));
-                field.show('title', sprintf('Field after propagation to element (%s), Distance: %.3e m', targetName, cumulativeDist));
+                fprintf('Reached "%s" at %.3e m\n', targetName, cumulativeDist);
+                field.show('title', sprintf('Field at "%s", Dist: %.3e m', targetName, cumulativeDist));
             end
         end
 
         function img = propScan(obj, field, numSteps, varargin)
+            % Propagates a field stepwise and records its intensity.
+            %
+            % Required
+            %   field : Field object to propagate.
+            %   numSteps : Number of propagation steps.
+            %
+            % Optionals
+            %   'live' : Logical flag for live updating during propagation (default: false).
             p = inputParser;
             addParameter(p, 'live', false, @islogical);
             parse(p, varargin{:});
@@ -307,8 +473,6 @@ classdef Sim < handle
 
             totalDistance = sum(obj.distances);
             dz = totalDistance / numSteps;
-            % fprintf('Total propagation steps: %d (dz = %.3e m)\n', numSteps, dz);
-
             img = zeros(obj.samples, numSteps);
             currentDistance = 0;
             nextElementIdx = 1;
@@ -318,16 +482,13 @@ classdef Sim < handle
             end
 
             for step = 1:numSteps
-                % fprintf('Propagation step %d of %d\n', step, numSteps);
-
                 intensity = abs(field.getComplexField()).^2;
                 if obj.dim == 1
                     vec = intensity(:);
                 else
                     vec = mean(intensity, 2);
                 end
-
-                vec = vec / max(vec(:) + eps);
+                vec = vec / (max(vec(:)) + eps);
                 img(:, step) = vec;
 
                 if obj.dim == 1
@@ -335,7 +496,6 @@ classdef Sim < handle
                 else
                     field = obj.angularSpectrumPropagation(field, dz);
                 end
-
                 currentDistance = currentDistance + dz;
 
                 while nextElementIdx <= numel(obj.distances) && ...
@@ -354,75 +514,72 @@ classdef Sim < handle
             end
         end
 
-        %% PROPAGATION CALCULATION METHODS
+        %% Propagation Calculation Methods
 
         function field = angularSpectrumPropagation(obj, field, z)
+            % Propagates a field using the 2D angular spectrum method.
+            %
+            % Required
+            %   field : Field object to propagate.
+            %   z : Propagation distance in meters.
             if z == 0
                 return;
             end
 
-            % Get complex input field and add padding.
             u_out = obj.addPadding(field.getComplexField());
-
-            % Parameters for propagation.
             [Nx, Ny] = size(u_out);
-            dx = obj.resolution; dy = obj.resolution;
+            dx = obj.resolution;
+            dy = obj.resolution;
             wavelength = obj.wavelength;
 
-            % Frequency axis computation.
             fx = (-Nx/2:Nx/2-1) / (Nx * dx);
             fy = (-Ny/2:Ny/2-1) / (Ny * dy);
             [FX_sqr, FY_sqr] = meshgrid(fx.^2, fy.^2);
 
-            % Compute longitudinal wavevector component k_z.
             k_z = 2 * pi * sqrt((1 / wavelength^2) - FX_sqr - FY_sqr);
             clear FX_sqr FY_sqr;
 
-            % Compute transfer function.
             H = exp(1i * k_z * z);
             clear k_z;
 
-            % Find the angular spectrum.
             u_out = fftshift(fft2(u_out));
-
-            % Propagate the angular spectrum using the transfer function.
             u_out = u_out .* H;
-
-            % Inverse Fourier transform to get the propagated field.
             u_out = obj.removePadding(ifft2(ifftshift(u_out)));
 
             field = field.setComplexField(u_out);
         end
 
         function field = angularSpectrumPropagation1D(obj, field, z)
-            % Angular Spectrum Propagation (1D)
+            % Propagates a field using the 1D angular spectrum method.
+            %
+            % Required
+            %   field : Field object to propagate.
+            %   z : Propagation distance in meters.
             dx = obj.resolution;
             uin = field.getComplexField();
-
-            % Pad the input array
             uin_padded = obj.addPadding(uin);
-
             Nx = length(uin_padded);
             k = 2 * pi / obj.wavelength;
-
             dfx = 1 / (Nx * dx);
             fx = (-Nx / 2 : Nx / 2 - 1) * dfx;
-
-            % Kernel for propagation in 1D
             kernel = exp(1i * k * z * sqrt(1 - (obj.wavelength * fx).^2));
             ftu = fftshift(fft(uin_padded));
             ftu = ftu .* kernel;
             uout_padded = ifft(ifftshift(ftu));
-
             uout = obj.removePadding(uout_padded);
-
             field = field.setComplexField(uout);
         end
 
-        %% PADDING METHODS
+        %% Padding Methods
 
         function paddedField = addPadding(obj, field)
-            % Adds zero-padding to the input field based on paddingRatio
+            % Adds zero-padding to a field.
+            %
+            % Required
+            %   field : Complex field matrix.
+            %
+            % Output
+            %   paddedField : Field with zero-padding added.
             paddingSize = round(obj.paddingRatio * obj.samples);
             if obj.dim == 1
                 paddedField = padarray(field, [0, paddingSize], 0, 'both');
@@ -432,7 +589,13 @@ classdef Sim < handle
         end
 
         function croppedField = removePadding(obj, paddedField)
-            % Removes zero-padding from the input field
+            % Removes zero-padding from a field.
+            %
+            % Required
+            %   paddedField : Field matrix with padding.
+            %
+            % Output
+            %   croppedField : Field matrix with padding removed.
             paddingSize = round(obj.paddingRatio * obj.samples);
             if obj.dim == 1
                 startIndexX = paddingSize + 1;
@@ -447,17 +610,21 @@ classdef Sim < handle
             end
         end
 
-        %% UTILITY METHODS
+        %% Utility Methods
 
         function obj = show(obj, varargin)
+            % Displays simulation parameters via a dashboard.
+            %
+            % Optionals
+            %   Additional name-value pairs for the dashboard display.
             osf.Dashboard([1,1], varargin{:}).show(obj);
         end
 
         function field = newField(obj, varargin)
-            % Create a new Field instance with system dimensions
-            % Optional input:
-            %   'cmap' - colormap for the phase plot (inherits from Field if not specified)
-
+            % Creates a new Field object.
+            %
+            % Optionals
+            %   'cmap' : Colormap for phase display (e.g., 'turbo', 'parula', etc.).
             p = inputParser;
             addOptional(p, 'cmap', [], @(x) ischar(x) && ismember(x, ...
             {'turbo', 'parula', 'jet', 'hot', 'gray', 'cool', ...
@@ -466,24 +633,26 @@ classdef Sim < handle
 
             field = osf.Field(obj.dim, obj.fieldLength, obj.resolution, obj.wavelength);
 
-            % Only override cmap if the user provides an input
             if ~isempty(p.Results.cmap)
                 field.cmap = p.Results.cmap;
             end
         end
 
         function print(obj)
-            %   Prints simulation parameters in a nicely formatted manner.
-            %   Length measurements are converted to mm (or um for resolution)
-            %   with no digits after the decimal, and element names are printed in a
-            %   bracketed list. If an element's name is empty, its type is used instead.
-
+            % Displays a summary of the simulation parameters.
+            %
+            % Required
+            %   No inputs.
+            %
+            % Output
+            %   Prints simulation parameters including element list, distances,
+            %   resolution, field length, number of samples, dimensionality,
+            %   wavelength, and padding ratio.
             distances_mm   = obj.distances * 1e3;
             fieldLength_mm = obj.fieldLength * 1e3;
             resolution_um  = obj.resolution * 1e6;
-            wavelength_nm      = obj.wavelength * 1e9;
+            wavelength_nm  = obj.wavelength * 1e9;
 
-            % Build a cell array of element names (or types if name is empty)
             numEl = numel(obj.elements);
             names = cell(1, numEl);
             for k = 1:numEl
@@ -493,7 +662,6 @@ classdef Sim < handle
                     names{k} = obj.elements{k}.name;
                 end
             end
-            % Join names with a comma and enclose in square brackets
             elementsStr = ['[', strjoin(names, ', '), ']'];
 
             fprintf('\nSim Parameters:\n');

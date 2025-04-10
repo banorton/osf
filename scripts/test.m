@@ -1,16 +1,21 @@
-clearvars; clc; close all;
 import osf.*;
 
-sim = Sim(5e-6, 1e-3);
-
+sim = Sim(10e-6, 5e-3);
 sim.addSource(532e-9);
+sim.addLens(100e-3, 100e-3);
+sim.addPlane(100e-3, name='Fourier Plane');
+sim.addLens(100e-3, 100e-3);
+sim.addDetector(100e-3, show=false);
 
-filter = sim.newField()...
-    .addAmplitude(-1)...
-    .setAmplitude(1, 'rect', [1e-3 .02e-3], [0 -.2e-3])...
-    .setAmplitude(1, 'rect', [1e-3 .02e-3], [0 .2e-3]);
-sim.addFilter(10e-3, filter);
-sim.addPlane(50e-3);
+show(sim);
 
-object = sim.newField();
-sim.propScan(object, 200, live=true);
+sim.removeElement("Lens 1");
+
+show(sim);
+
+sim.elements{3}.focalLength = 50e-3;
+
+show(sim);
+
+object = sim.newField().setAmplitude(0, 'rect', [2e-3 2e-3]);
+fields = sim.prop(object, collect=true);

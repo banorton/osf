@@ -45,7 +45,7 @@ classdef Diffuser < osf.elements.Element
             else
                 error('Unsupported dimensionality in element.');
             end
-            field.phase = obj.wrap(field.phase + phaseShift);
+            field.phase = field.phase + phaseShift;
 
             if ~strcmp(obj.apertureType, 'none')
                 field = obj.applyAperture(field);

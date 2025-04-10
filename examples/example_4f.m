@@ -1,8 +1,8 @@
 import osf.*;
 
 % EXAMPLE DESCRIPTION
-% This is an example showing how to build a very simple 4f system and
-% propagate a simple rectangular object through the system.
+% This is a detailed example demonstrating how to build a very simple 4f
+% system and propagate a rectangular amplitude object through the system.
 
 % Start by creating a simulation and defining the spatial resolution and
 % size of the window respectively.

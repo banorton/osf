@@ -1,4 +1,19 @@
 function fig = show(obj, varargin)
+% Displays an object using the appropriate visualization function.
+%
+% Required
+%   obj : The object to display. It can be one of the following:
+%         - An osf.Sim object
+%         - An osf.Field object (scalar or array)
+%         - A cell array of osf.Field objects
+%         - A real numeric matrix
+%
+% Optionals
+%   varargin : Additional parameters passed to the visualization function.
+%
+% Example
+%   fig = show(simObj, 'optionName', optionValue);
+
     if nargin < 1
         error('The first argument (obj) is required.');
     end
@@ -6,7 +21,7 @@ function fig = show(obj, varargin)
     if isa(obj, 'osf.Sim')
         fig = osf.vis.sim(obj, varargin{:});
     elseif isa(obj, 'osf.Field')
-        if numel(obj) == 1
+        if isscalar(obj)
             fig = osf.vis.field(obj, varargin{:});
         else
             fig = osf.vis.fields(obj, varargin{:});

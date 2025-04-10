@@ -13,12 +13,13 @@ switch data.meta.plotType
 
     case {'cross', 'amplitude.cross', 'a.cross', 'phase.cross', 'p.cross'}
         hold on;
-        plot(data.xAxis, data.xCross, 'LineWidth', 1.5, 'DisplayName', 'X Cross Section');
-        plot(data.yAxis, data.yCross, 'LineWidth', 1.5, 'DisplayName', 'Y Cross Section');
+        plot(data.xAxis, data.xCross, '-o', 'Color', [0.3 0.5 1 0.2], 'MarkerSize', 3, 'DisplayName', 'X Cross Section');
+        plot(data.yAxis, data.yCross, '-o', 'Color', [1 0 0 0.2], 'MarkerSize', 3, 'DisplayName', 'Y Cross Section');
         hold off;
         title(data.title);
         xlabel(data.xlabel);
         ylabel(data.ylabel);
+        box on;
         grid off;
         legend('show');
 

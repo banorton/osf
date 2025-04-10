@@ -1,8 +1,7 @@
 import osf.*;
 
 % EXAMPLE DESCRIPTION
-% 4-f phase contrast system using Fourier optics simulation.
-% Demonstrates spatial phase encoding, filtering, and reconstruction.
+% This is an example showing how to build a phase contrast simulation.
 
 % Initialize simulation with 2 µm resolution and 1 mm field of view.
 sim = Sim(2e-6, 1e-3);
@@ -10,7 +9,7 @@ sim = Sim(2e-6, 1e-3);
 % Add a source plane labeled "Object Plane".
 sim.addSource(name='Object Plane');
 
-% Add a lens with 20 mm focal length, 20 mm after the source.
+% Add a lens with 20mm focal length, 20 mm after the source.
 sim.addLens(20e-3, 20e-3);
 
 % Create a phase filter that adds a π/2 phase shift in a small circular
@@ -18,11 +17,11 @@ sim.addLens(20e-3, 20e-3);
 filt = sim.newField().setAmplitude(0).addPhase(pi/2, 'c', .03e-3);
 sim.addFilter(20e-3, filt, operation='add');
 
-% Add a second lens for the 4-f system (20 mm focal length, 20 mm after
+% Add a second lens for the 4-f system (20mm focal length, 20mm after
 % filter).
 sim.addLens(20e-3, 20e-3);
 
-% Add a detector 20 mm after the second lens.
+% Add a detector 20mm after the second lens.
 sim.addDetector(20e-3);
 
 % Create an object with four rectangular phase zones of different phase

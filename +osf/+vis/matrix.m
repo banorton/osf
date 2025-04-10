@@ -4,13 +4,15 @@ function fig = matrix(m, varargin)
     addRequired(p, 'm');
     addParameter(p, 'title', '', @(x) ischar(x) || isstring(x));
     addParameter(p, 'colormap', 'gray', @(x) ischar(x) || isstring(x));
+    addParameter(p, 'figPosition', [650 250 650 550], @(x) isnumeric(x) && numel(x) == 4);
     p.KeepUnmatched = true;
     parse(p, m, varargin{:});
 
     titleStr = p.Results.title;
     cmap = p.Results.colormap;
+    figPosition = p.Results.figPosition;
 
-    fig = figure('Position', [750 350 450 450]);
+    fig = figure('Position', figPosition);
     ax = subplot(1,1,1);
 
     if ~isempty(titleStr)

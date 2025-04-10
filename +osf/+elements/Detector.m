@@ -35,10 +35,8 @@ classdef Detector < osf.elements.Element
         end
 
         function field = apply(obj, field)
-            intensity = field.amplitude .^ 2;
-
             % Field physical size
-            [fieldRows, fieldCols] = size(intensity);
+            [fieldRows, fieldCols] = size(field.intensity);
             fieldSizeX = fieldCols * field.resolution;
             fieldSizeY = fieldRows * field.resolution;
 
@@ -57,7 +55,7 @@ classdef Detector < osf.elements.Element
             % Interpolate
             [XField, YField] = meshgrid(xField, yField);
             [XDet, YDet] = meshgrid(xDet, yDet);
-            projected = interp2(XField, YField, intensity, XDet, YDet, 'linear', 0);
+            projected = interp2(XField, YField, field.intensity, XDet, YDet, 'linear', 0);
 
             % Quantize
             levels = 2^obj.bitDepth;
