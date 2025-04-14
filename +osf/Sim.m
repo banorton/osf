@@ -12,6 +12,7 @@ classdef Sim < handle
         dim               % Dimensionality (1 for 1D or 2 for 2D)
         wavelength        % Wavelength (meters; default 632e-9)
         paddingRatio      % Ratio of zero-padding added during propagation
+        idCount
     end
 
     methods
@@ -44,7 +45,7 @@ classdef Sim < handle
             obj.dim           = p.Results.dim;
             obj.wavelength    = p.Results.wavelength;
             obj.paddingRatio  = p.Results.paddingRatio;
-
+            obj.idCount       = 1;
             obj.samples       = round(obj.fieldLength / obj.resolution);
             obj.elements      = {};
             obj.distances     = [];
@@ -68,6 +69,7 @@ classdef Sim < handle
                 error('Element dimensionality must match the simulation system.');
             end
 
+            element.id = obj.genElementID();
             obj.elements{end+1} = element;
             obj.distances(end+1) = dist;
         end
@@ -618,6 +620,12 @@ classdef Sim < handle
             % Optionals
             %   Additional name-value pairs for the dashboard display.
             osf.Dashboard([1,1], varargin{:}).show(obj);
+        end
+
+        function newID = genElementID(obj)
+            % Generates a unique ID for elements being added to the system.
+            newID = obj.idCount;
+            obj.idCount = obj.idCount + 1;
         end
 
         function field = newField(obj, varargin)
