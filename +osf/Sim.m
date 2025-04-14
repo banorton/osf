@@ -128,7 +128,7 @@ classdef Sim < handle
 
             count = 0;
             for i = 1:numel(obj.elements)
-                if isprop(obj.elements{i}, 'type') && strcmp(obj.elements{i}.type, 'lens')
+                if strcmp(obj.elements{i}.elementType, 'lens')
                     count = count + 1;
                 end
             end
