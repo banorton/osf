@@ -40,6 +40,13 @@ classdef (Abstract) Element < handle
             end
         end
 
+        function name = genName(obj, name)
+            if isempty(name)
+                capType = [upper(obj.elementType(1)), lower(obj.elementType(2:end))];
+                name = strcat(capType, " ", num2str(obj.id));
+            end
+        end
+
         function field = applyAperture(obj, field)
             % Apply the aperture of the optical element to the input field
             fieldLength = field.fieldLength;

@@ -21,7 +21,7 @@ classdef Lens < osf.elements.Element
             addParameter(p, 'id', 0, @isnumeric(x));
             parse(p, focalLength, varargin{:});
 
-            obj.name = p.Results.name;
+            obj.name = obj.genName(p.Results.name);
             obj.dim = p.Results.dim;
             obj.id = p.Results.id;
             obj.elementType = 'lens';

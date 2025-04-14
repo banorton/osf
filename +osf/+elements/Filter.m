@@ -23,10 +23,11 @@ classdef Filter < osf.elements.Element
 
             parse(p, field, varargin{:});
 
-            obj.name = p.Results.name;
+            obj.name = obj.genName(p.Results.name);
             obj.dim = p.Results.dim;
             obj.operation = char(p.Results.operation);
             obj.id = p.Results.id;
+
             obj.field = field;
             obj.elementType = 'filter';
             obj.apertureType = 'none';

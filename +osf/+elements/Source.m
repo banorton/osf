@@ -19,10 +19,11 @@ classdef Source < osf.elements.Element
             addParameter(p, 'id', 0, @isnumeric(x));
             parse(p, wavelength, varargin{:});
 
-            obj.name = p.Results.name;
+            obj.name = obj.genName(p.Results.name);
             obj.dim = p.Results.dim;
             obj.wavelength = p.Results.wavelength;
             obj.id = p.Results.id;
+
             obj.elementType = 'source';
             obj.apertureType = 'none';
             obj.apertureParams = struct();

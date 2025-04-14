@@ -16,12 +16,13 @@ classdef Aperture < osf.elements.Element
             addParameter(p, 'rect', NaN, @isnumeric);
             addParameter(p, 'name', '', @ischar);
             addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
-            addParameter(p, 'id', 0, isnumeric(x));
+            addParameter(p, 'id', 0, @isnumeric);
             parse(p, varargin{:});
 
-            obj.name = p.Results.name;
             obj.dim = p.Results.dim;
             obj.id = p.Results.id;
+            obj.name = obj.genName(p.Results.name);
+
             obj.elementType = 'aperture';
             obj.apertureType = 'none';
             obj.apertureParams = struct();

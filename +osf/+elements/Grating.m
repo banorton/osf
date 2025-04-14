@@ -26,13 +26,14 @@ classdef Grating < osf.elements.Element
             addParameter(p, 'id', 0, @isnumeric);
             parse(p, linesPerMM, varargin{:});
 
+            obj.name = obj.genName(p.Results.name);
             obj.dim = p.Results.dim;
             obj.modType = p.Results.modType;
             obj.linesPerMM = p.Results.linesPerMM;
             obj.gratingType = obj.standardizeType(p.Results.gratingType);
             obj.blazeAngle = p.Results.blazeAngle;
             obj.id = p.Results.id;
-            obj.name = 'Grating';
+
             obj.elementType = 'grating';
             obj.apertureType = 'none';
             obj.apertureParams = struct();
