@@ -5,6 +5,7 @@ classdef Diffuser < osf.elements.Element
         apertureType   % Type of aperture ('none', 'circ', 'rect', '1D-aperture')
         apertureParams % Parameters for defining the aperture (radius, length, width, etc.)
         dim            % Dimensionality of the element (1 or 2)
+        id
 
         roughness          % RMS roughness in meters
         correlationLength  % Correlation length in meters
@@ -14,19 +15,22 @@ classdef Diffuser < osf.elements.Element
 
         function obj = Diffuser(roughness, correlationLength, varargin)
             p = inputParser;
-            addParameter(p, 'name', '', @ischar);
-            addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
             addRequired(p, 'roughness', @isnumeric);
             addRequired(p, 'correlationLength', @isnumeric);
+            addParameter(p, 'name', '', @ischar);
+            addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
+            addParameter(p, 'id', 0, isnumeric(x));
             parse(p, roughness, correlationLength, varargin{:});
 
+            obj.name = p.Results.name;
+            obj.dim = p.Results.dim;
+            obj.id = p.Results.id;
+            obj.roughness = roughness;
+            obj.correlationLength = correlationLength;
+            obj.correlationLength = correlationLength;
             obj.elementType = 'diffuser';
             obj.apertureType = 'none';
             obj.apertureParams = struct();
-            obj.name = p.Results.name;
-            obj.dim = p.Results.dim;
-            obj.roughness = roughness;
-            obj.correlationLength = correlationLength;
         end
 
         function phaseShift = phaseFunction(obj, sz, res, lambda)

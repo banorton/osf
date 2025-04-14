@@ -7,6 +7,7 @@ classdef (Abstract) Element < handle
         apertureType   % Type of aperture ('none', 'circ', 'rect', etc.)
         apertureParams % Parameters for defining the aperture (radius, length, width, etc.)
         dim            % Dimensionality of the element (1 or 2)
+        id
     end
 
     methods (Abstract)

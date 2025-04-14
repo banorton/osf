@@ -5,6 +5,7 @@ classdef Lens < osf.elements.Element
         apertureType   % Type of aperture ('none', 'circ', 'rect', '1D-aperture')
         apertureParams % Parameters for defining the aperture (radius, length, width, etc.)
         dim            % Dimensionality of the element (1 or 2)
+        id
 
         focalLength    % focalLength: Focal length in meters.
     end
@@ -13,17 +14,20 @@ classdef Lens < osf.elements.Element
 
         function obj = Lens(focalLength, varargin)
             p = inputParser;
+            addRequired(p, 'focalLength', @isnumeric);
             addParameter(p, 'name', 'Lens', @ischar);
             addParameter(p, 'circ', 0, @isnumeric);
             addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
-            addRequired(p, 'focalLength', @isnumeric);
+            addParameter(p, 'id', 0, @isnumeric(x));
             parse(p, focalLength, varargin{:});
 
+            obj.name = p.Results.name;
+            obj.dim = p.Results.dim;
+            obj.id = p.Results.id;
             obj.elementType = 'lens';
             obj.apertureType = 'none';
             obj.apertureParams = struct();
-            obj.name = p.Results.name;
-            obj.dim = p.Results.dim;
+
             if focalLength == 0
                 error('Lens focal length must be non-zero.');
             end

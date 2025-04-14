@@ -5,6 +5,7 @@ classdef Detector < osf.elements.Element
         apertureType
         apertureParams
         dim
+        id
 
         pixelPitch
         resolution
@@ -21,6 +22,7 @@ classdef Detector < osf.elements.Element
             addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
             addParameter(p, 'bitDepth', 8, @isnumeric);
             addParameter(p, 'show', true, @islogical);
+            addParameter(p, 'id', 0, @isnumeric);
             parse(p, pixelPitch, resolution, varargin{:});
 
             obj.elementType = 'detector';
@@ -32,6 +34,7 @@ classdef Detector < osf.elements.Element
             obj.resolution = p.Results.resolution;
             obj.bitDepth = p.Results.bitDepth;
             obj.show = p.Results.show;
+            obj.id = p.Results.id;
         end
 
         function field = apply(obj, field)

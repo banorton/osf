@@ -5,11 +5,12 @@ classdef Grating < osf.elements.Element
         apertureType   % Type of aperture ('none', 'circ', 'rect', etc.)
         apertureParams % Parameters for defining the aperture (radius, length, width, etc.)
         dim            % Dimensionality of the element (1 or 2)
+        id
 
         linesPerMM  % Lines per mm (scalar for 1D, [linesX, linesY] for 2D)
         gratingType % Grating type ('sinusoidal' or 'blazed')
         blazeAngle  % Blaze angle (only for blazed grating)
-        type        % Target field property to apply grating ('amplitude' or 'phase')
+        modType     % Target field property to apply grating ('amplitude' or 'phase')
     end
 
     methods
@@ -19,21 +20,22 @@ classdef Grating < osf.elements.Element
             p = inputParser;
             addRequired(p, 'linesPerMM', @(x) isnumeric(x) && (isscalar(x) || numel(x) == 2));
             addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
-            addParameter(p, 'gratingType', 'sinusoidal', ...
-                @(x) ischar(x) && ismember(lower(x), {'sinusoidal', 's', 'sine', 'blazed', 'binary'}));
+            addParameter(p, 'gratingType', 'sinusoidal', @(x) ischar(x) && ismember(lower(x), {'sinusoidal', 's', 'sine', 'blazed', 'binary'}));
             addParameter(p, 'blazeAngle', 0, @(x) isnumeric(x) && x >= 0);
-            addParameter(p, 'type', 'amplitude', @(x) ismember(x, {'amplitude', 'phase'}));
+            addParameter(p, 'modType', 'amplitude', @(x) ismember(x, {'amplitude', 'phase'}));
+            addParameter(p, 'id', 0, @isnumeric);
             parse(p, linesPerMM, varargin{:});
 
             obj.dim = p.Results.dim;
+            obj.modType = p.Results.modType;
+            obj.linesPerMM = p.Results.linesPerMM;
+            obj.gratingType = obj.standardizeType(p.Results.gratingType);
+            obj.blazeAngle = p.Results.blazeAngle;
+            obj.id = p.Results.id;
             obj.name = 'Grating';
             obj.elementType = 'grating';
             obj.apertureType = 'none';
             obj.apertureParams = struct();
-            obj.type = p.Results.type;
-            obj.linesPerMM = p.Results.linesPerMM;
-            obj.gratingType = obj.standardizeType(p.Results.gratingType);
-            obj.blazeAngle = p.Results.blazeAngle;
 
             if ~ismember(obj.dim, [1, 2])
                 error('Dimensionality must be either 1 or 2.');
@@ -101,7 +103,7 @@ classdef Grating < osf.elements.Element
             % Create the grating phase pattern
             gratingPattern = obj.createGrating(field.fieldLength, field.resolution);
 
-            if strcmp(obj.type, 'phase')
+            if strcmp(obj.modType, 'phase')
                 field.phase = field.phase + gratingPattern;
             else
                 field.amplitude = field.amplitude .* gratingPattern;

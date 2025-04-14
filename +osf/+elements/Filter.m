@@ -5,6 +5,7 @@ classdef Filter < osf.elements.Element
         apertureType   % Type of aperture ('none', 'circ', 'rect', '1D-aperture')
         apertureParams % Parameters for defining the aperture (radius, length, width, etc.)
         dim            % Dimensionality of the element (1 or 2)
+        id
 
         field          % The field transformation filter applies
         operation      % Operation mode ('mult' or 'add')
@@ -18,16 +19,18 @@ classdef Filter < osf.elements.Element
             addParameter(p, 'name', 'Filter', @(x) ischar(x) || isstring(x));
             addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
             addParameter(p, 'operation', 'mult', @(x) ischar(x) || isstring(x) && ismember(x, {'mult', 'add'}));
+            addParameter(p, 'id', 0, @isnumeric(x));
 
             parse(p, field, varargin{:});
 
-            obj.elementType = 'filter';
-            obj.apertureType = 'none';
-            obj.apertureParams = struct();
             obj.name = p.Results.name;
             obj.dim = p.Results.dim;
             obj.operation = char(p.Results.operation);
+            obj.id = p.Results.id;
             obj.field = field;
+            obj.elementType = 'filter';
+            obj.apertureType = 'none';
+            obj.apertureParams = struct();
         end
 
         function phaseShift = phaseFunction(~)
