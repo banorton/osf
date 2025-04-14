@@ -15,18 +15,19 @@ classdef Lens < osf.elements.Element
         function obj = Lens(focalLength, varargin)
             p = inputParser;
             addRequired(p, 'focalLength', @isnumeric);
-            addParameter(p, 'name', 'Lens', @ischar);
+            addParameter(p, 'name', '', @ischar);
             addParameter(p, 'circ', 0, @isnumeric);
             addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
-            addParameter(p, 'id', 0, @isnumeric(x));
+            addParameter(p, 'id', 0, @isnumeric);
             parse(p, focalLength, varargin{:});
 
-            obj.name = obj.genName(p.Results.name);
             obj.dim = p.Results.dim;
             obj.id = p.Results.id;
             obj.elementType = 'lens';
             obj.apertureType = 'none';
             obj.apertureParams = struct();
+
+            obj.name = obj.genName(p.Results.name);
 
             if focalLength == 0
                 error('Lens focal length must be non-zero.');

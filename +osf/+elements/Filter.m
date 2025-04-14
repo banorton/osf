@@ -16,14 +16,13 @@ classdef Filter < osf.elements.Element
             % Constructor for Filter class
             p = inputParser;
             addRequired(p, 'field', @(x) isa(x, 'osf.Field'));
-            addParameter(p, 'name', 'Filter', @(x) ischar(x) || isstring(x));
+            addParameter(p, 'name', '', @(x) ischar(x) || isstring(x));
             addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
             addParameter(p, 'operation', 'mult', @(x) ischar(x) || isstring(x) && ismember(x, {'mult', 'add'}));
-            addParameter(p, 'id', 0, @isnumeric(x));
+            addParameter(p, 'id', 0, @isnumeric);
 
             parse(p, field, varargin{:});
 
-            obj.name = obj.genName(p.Results.name);
             obj.dim = p.Results.dim;
             obj.operation = char(p.Results.operation);
             obj.id = p.Results.id;
@@ -32,6 +31,8 @@ classdef Filter < osf.elements.Element
             obj.elementType = 'filter';
             obj.apertureType = 'none';
             obj.apertureParams = struct();
+
+            obj.name = obj.genName(p.Results.name);
         end
 
         function phaseShift = phaseFunction(~)

@@ -19,6 +19,7 @@ classdef Grating < osf.elements.Element
             % Parse optional arguments
             p = inputParser;
             addRequired(p, 'linesPerMM', @(x) isnumeric(x) && (isscalar(x) || numel(x) == 2));
+            addParameter(p, 'name', '', @ischar);
             addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
             addParameter(p, 'gratingType', 'sinusoidal', @(x) ischar(x) && ismember(lower(x), {'sinusoidal', 's', 'sine', 'blazed', 'binary'}));
             addParameter(p, 'blazeAngle', 0, @(x) isnumeric(x) && x >= 0);
@@ -26,7 +27,6 @@ classdef Grating < osf.elements.Element
             addParameter(p, 'id', 0, @isnumeric);
             parse(p, linesPerMM, varargin{:});
 
-            obj.name = obj.genName(p.Results.name);
             obj.dim = p.Results.dim;
             obj.modType = p.Results.modType;
             obj.linesPerMM = p.Results.linesPerMM;
@@ -37,6 +37,8 @@ classdef Grating < osf.elements.Element
             obj.elementType = 'grating';
             obj.apertureType = 'none';
             obj.apertureParams = struct();
+
+            obj.name = obj.genName(p.Results.name);
 
             if ~ismember(obj.dim, [1, 2])
                 error('Dimensionality must be either 1 or 2.');

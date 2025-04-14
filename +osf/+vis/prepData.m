@@ -142,9 +142,18 @@ function data = prepData(obj, plotType, varargin)
     end
 
     function data = prepSim(obj, data)
+        % Prepares simulation data for plotting and ray tracing.
+        %
+        % Required
+        %   data : Structure to populate with simulation information.
+        %
+        % This function collects information about elements (positions, names,
+        % types, etc.) and computes global settings. If there is more than one
+        % element, it performs the paraxial ray tracing; otherwise, it skips it.
+
         if isempty(obj.elements)
             data.isempty = true;
-            return
+            return;
         else
             data.isempty = false;
         end
@@ -164,19 +173,23 @@ function data = prepData(obj, plotType, varargin)
         end
 
         data.distances = obj.distances;
-        data.axisLimits = [min(0, -.5*currentX), currentX + .5*currentX, -0.1, 0.1];
+        data.axisLimits = [min(0, -0.5*currentX), currentX + 0.5*currentX, -0.1, 0.1];
         data.elementHeight = elementHeight;
         data.labelOffset = labelOffset;
         data.componentCenters = componentCenters;
         data.baselineY = -0.03;
         data.tickHeight = 0.002;
 
-        parax = osf.parax.ParaxialSystem(obj);
-        parax = osf.parax.ParaxialSystem.solveSystem(parax);
-        data.paraxial.dist = cumsum(parax.distances);
-        data.paraxial.marginalRay = parax.marginalRay.heights * ...
-        (0.8 * elementHeight / max(2 * abs(parax.marginalRay.heights)));
-        data.paraxial.chiefRay = parax.chiefRay.heights * ...
-        (0.8 * elementHeight / max(2 * abs(parax.chiefRay.heights)));
+        % Only perform paraxial ray tracing if there is more than one element.
+        if isscalar(obj.elements)
+            data.paraxial = [];
+            data.axisLimits = [-.02, .02, -0.1, 0.1];
+        else
+            parax = osf.parax.ParaxialSystem(obj);
+            parax = osf.parax.ParaxialSystem.solveSystem(parax);
+            data.paraxial.dist = cumsum(parax.distances);
+            data.paraxial.marginalRay = parax.marginalRay.heights * (0.8 * elementHeight / max(2 * abs(parax.marginalRay.heights)));
+            data.paraxial.chiefRay = parax.chiefRay.heights * (0.8 * elementHeight / max(2 * abs(parax.chiefRay.heights)));
+        end
     end
 end

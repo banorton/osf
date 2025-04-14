@@ -22,7 +22,6 @@ classdef Diffuser < osf.elements.Element
             addParameter(p, 'id', 0, isnumeric(x));
             parse(p, roughness, correlationLength, varargin{:});
 
-            obj.name = obj.genName(p.Results.name);
             obj.dim = p.Results.dim;
             obj.id = p.Results.id;
 
@@ -32,6 +31,8 @@ classdef Diffuser < osf.elements.Element
             obj.roughness = roughness;
             obj.correlationLength = correlationLength;
             obj.correlationLength = correlationLength;
+
+            obj.name = obj.genName(p.Results.name);
         end
 
         function phaseShift = phaseFunction(obj, sz, res, lambda)

@@ -21,11 +21,11 @@ classdef Aperture < osf.elements.Element
 
             obj.dim = p.Results.dim;
             obj.id = p.Results.id;
-            obj.name = obj.genName(p.Results.name);
-
             obj.elementType = 'aperture';
             obj.apertureType = 'none';
             obj.apertureParams = struct();
+
+            obj.name = obj.genName(p.Results.name);
 
             if ~isnan(p.Results.circ) && ~isnan(p.Results.rect)
                 error('Can not have ''circ'' and ''rect'' for aperture.');

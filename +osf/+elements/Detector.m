@@ -18,14 +18,13 @@ classdef Detector < osf.elements.Element
             p = inputParser;
             addRequired(p, 'pixelPitch', @isnumeric);
             addRequired(p, 'resolution', @isnumeric);
-            addParameter(p, 'name', 'Detector', @ischar);
+            addParameter(p, 'name', '', @ischar);
             addParameter(p, 'dim', 2, @(x) isnumeric(x) && ismember(x, [1, 2]));
             addParameter(p, 'bitDepth', 8, @isnumeric);
             addParameter(p, 'show', true, @islogical);
             addParameter(p, 'id', 0, @isnumeric);
             parse(p, pixelPitch, resolution, varargin{:});
 
-            obj.name = obj.genName(p.Results.name);
             obj.dim = p.Results.dim;
             obj.pixelPitch = p.Results.pixelPitch;
             obj.resolution = p.Results.resolution;
@@ -36,6 +35,8 @@ classdef Detector < osf.elements.Element
             obj.elementType = 'detector';
             obj.apertureType = 'none';
             obj.apertureParams = struct();
+
+            obj.name = obj.genName(p.Results.name);
         end
 
         function field = apply(obj, field)

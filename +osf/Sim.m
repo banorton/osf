@@ -128,15 +128,7 @@ classdef Sim < handle
             % Parameters (Name-Value Pairs)
             %   Additional name-value pairs for the lens.
 
-            count = 0;
-            for i = 1:numel(obj.elements)
-                if strcmp(obj.elements{i}.elementType, 'lens')
-                    count = count + 1;
-                end
-            end
-
-            lensName = sprintf('Lens %d', count + 1);
-            lens = osf.elements.Lens(focalLength, 'dim', obj.dim, 'name', lensName, varargin{:});
+            lens = osf.elements.Lens(focalLength, 'dim', obj.dim, 'id', obj.genElementID(), varargin{:});
             obj.addElement(dist, lens);
         end
 
@@ -152,7 +144,7 @@ classdef Sim < handle
             %
             % Parameters (Name-Value Pairs)
             %   Additional name-value pairs for the diffuser.
-            diffuser = osf.elements.Diffuser(roughness, correlationLength, 'dim', obj.dim, varargin{:});
+            diffuser = osf.elements.Diffuser(roughness, correlationLength, 'dim', obj.dim, 'id', obj.genElementID(), varargin{:});
             obj.addElement(dist, diffuser);
         end
 
@@ -164,7 +156,7 @@ classdef Sim < handle
             %
             % Parameters (Name-Value Pairs)
             %   Additional name-value pairs for the aperture.
-            aperture = osf.elements.Aperture('dim', obj.dim, varargin{:});
+            aperture = osf.elements.Aperture('dim', obj.dim, 'id', obj.genElementID(), varargin{:});
             obj.addElement(dist, aperture);
         end
 
@@ -176,7 +168,7 @@ classdef Sim < handle
             %
             % Parameters (Name-Value Pairs)
             %   Additional name-value pairs (e.g., 'name' for labeling).
-            plane = osf.elements.Plane('dim', obj.dim, varargin{:});
+            plane = osf.elements.Plane('dim', obj.dim, 'id', obj.genElementID(), varargin{:});
             obj.addElement(dist, plane);
         end
 
@@ -189,7 +181,7 @@ classdef Sim < handle
             %
             % Parameters (Name-Value Pairs)
             %   Additional name-value pairs for filter configuration.
-            filter = osf.elements.Filter(field, varargin{:});
+            filter = osf.elements.Filter(field, 'id', obj.genElementID(), varargin{:});
             obj.addElement(dist, filter);
         end
 
@@ -204,7 +196,7 @@ classdef Sim < handle
             %
             % Parameters (Name-Value Pairs)
             %   Additional name-value pairs for the grating.
-            grating = osf.elements.Grating(linesPerMM, 'dim', obj.dim, varargin{:});
+            grating = osf.elements.Grating(linesPerMM, 'dim', obj.dim, 'id', obj.genElementID(), varargin{:});
             obj.addElement(dist, grating);
         end
 
@@ -228,7 +220,7 @@ classdef Sim < handle
                 obj.wavelength = wavelength;
             end
 
-            source = osf.elements.Source(wavelength, 'dim', obj.dim, p.Unmatched);
+            source = osf.elements.Source(wavelength, 'dim', obj.dim, 'id', obj.genElementID(), p.Unmatched);
             obj.addElement(0, source);
         end
 
@@ -247,7 +239,7 @@ classdef Sim < handle
             addParameter(p, 'pixelPitch', obj.resolution);
             parse(p, varargin{:});
 
-            detector = osf.elements.Detector(p.Results.resolution, p.Results.pixelPitch, 'dim', obj.dim, p.Unmatched);
+            detector = osf.elements.Detector(p.Results.resolution, p.Results.pixelPitch, 'dim', obj.dim, 'id', obj.genElementID(), p.Unmatched);
             obj.addElement(dist, detector);
         end
 
