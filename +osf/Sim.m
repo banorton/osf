@@ -69,7 +69,6 @@ classdef Sim < handle
                 error('Element dimensionality must match the simulation system.');
             end
 
-            element.id = obj.genElementID();
             obj.elements{end+1} = element;
             obj.distances(end+1) = dist;
         end
