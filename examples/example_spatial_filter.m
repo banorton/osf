@@ -7,7 +7,7 @@ import osf.*;
 % 10mm lens. After the aperture, the light has a smooth gaussian
 % distribution.
 
-% Create a simulation with a 1mm by 1mm 
+% Create a simulation with a 1mm by 1mm FOV and 3um resolution.
 sim = Sim(3e-6, 1e-3);
 
 % Add a source. If no arugment is entered, the default wavelenth is 632nm.

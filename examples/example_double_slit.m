@@ -14,7 +14,7 @@ sim = Sim(5e-6, 1e-3);
 sim.addSource(532e-9);
 
 % Define slit separation for the double slit in meters.
-slit_separation = .1e-3;
+slit_separation = .2e-3;
 
 % Create a filter with two narrow horizontal slits.
 filter = sim.newField()...

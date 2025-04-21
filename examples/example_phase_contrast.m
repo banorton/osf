@@ -35,9 +35,9 @@ object = sim.newField()...
     .addPhase(3*pi/2, 'r', rect_size, [-rect_offset, rect_offset]);
 
 % Display phase of object and filter.
-object.show('p', title='Object');
+object.show(title='Object');
 filt.show('p', title='Phase Filter');
 sim.show();
 
 % Propagate the object field through the system.
-sim.prop(object);
+sim.prop(object).show();

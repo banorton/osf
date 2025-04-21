@@ -637,6 +637,10 @@ classdef Sim < handle
             end
         end
 
+        function sz = size(obj)
+            sz = [obj.samples, obj.samples];
+        end
+
         function print(obj)
             % Displays a summary of the simulation parameters.
             %
