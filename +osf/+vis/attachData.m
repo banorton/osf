@@ -5,14 +5,14 @@ function attachData(ax, data)
     case {'osf.Field.default', 'a', 'amplitude', 'phase', 'p'}
         data.imageData = flipud(data.imageData);
         imagesc(data.xAxis, data.yAxis, data.imageData);
-        colormap(data.cmap);
+        colormap(ax, data.cmap);
         colorbar;
         title(data.title);
         xlabel(data.xlabel);
         ylabel(data.ylabel);
         axis xy;
-        axis equal;
-        axis tight;
+        % axis equal;
+        % axis tight;
 
     case {'cross', 'amplitude.cross', 'a.cross', 'phase.cross', 'p.cross'}
         hold on;

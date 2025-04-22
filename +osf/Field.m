@@ -347,7 +347,7 @@ classdef Field
             osf.Dashboard([2,1], varargin{:}).show(obj, 'amplitude', varargin{:}).show(obj, 'phase', varargin{:});
         end
 
-        function obj = img(obj, path, varargin)
+        function obj = import(obj, path, varargin)
             p = inputParser;
             p.KeepUnmatched = true;
             addRequired(p, 'path', @(x) ischar(x) || isstring(x));

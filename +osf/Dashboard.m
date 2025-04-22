@@ -71,7 +71,6 @@ classdef Dashboard < handle
             end
 
             ax = subplot(obj.subplotRows, obj.subplotCols, subplotIndex);
-            hold(ax, 'on');
 
             data = osf.vis.prepData(dataObj, plotType, p.Unmatched);
             osf.vis.attachData(ax, data);
