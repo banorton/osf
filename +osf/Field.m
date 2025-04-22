@@ -2,7 +2,7 @@ classdef Field
     % Field class for representing an optical field.
     % Stores amplitude, phase, and spatial properties, and provides methods
     % to manipulate and visualize the field.
-    
+
     properties
         amplitude    % Amplitude of the field (1D or 2D array)
         phase        % Phase of the field (1D or 2D array)
@@ -13,12 +13,12 @@ classdef Field
         dim          % Dimensionality of the field (1 or 2)
         cmap         % Colormap for visualization
     end
-    
+
     properties (Dependent)
         intensity    % Intensity computed as |complexField|^2
         complexField % Complex field computed as amplitude .* exp(1i*phase)
     end
-    
+
     methods
         function obj = Field(dim, fieldLength, resolution, lambda)
             % Constructs a new Field object.
@@ -36,7 +36,7 @@ classdef Field
             obj.resolution = resolution;
             obj.lambda = lambda;
             obj.cmap = 'bone';
-            
+
             samples = round(fieldLength / resolution);
             if dim == 1
                 obj.amplitude = ones(1, samples);
@@ -48,7 +48,7 @@ classdef Field
                 obj.size = [samples samples];
             end
         end
-        
+
         function complexField = getComplexField(obj)
             % Returns the complex field computed as amplitude .* exp(1i*phase).
             %
@@ -56,7 +56,7 @@ classdef Field
             %   obj : Field object
             complexField = obj.amplitude .* exp(1i * obj.phase);
         end
-        
+
         function obj = setComplexField(obj, field)
             % Sets the Field object's amplitude and phase from the input complex field.
             %
@@ -65,7 +65,7 @@ classdef Field
             obj.amplitude = abs(field);
             obj.phase = angle(field);
         end
-        
+
         function obj = newField(obj)
             % Resets the Field object to default values (amplitude ones, phase zeros).
             %
@@ -74,7 +74,7 @@ classdef Field
             obj.amplitude = ones(obj.size);
             obj.phase = zeros(obj.size);
         end
-        
+
         function obj = setAmplitude(obj, value, varargin)
             % Sets the amplitude of the field.
             %
@@ -109,7 +109,7 @@ classdef Field
                 obj.amplitude(:) = value;
             end
         end
-        
+
         function obj = addAmplitude(obj, value, varargin)
             % Adds a value to the current amplitude of the field.
             %
@@ -144,7 +144,7 @@ classdef Field
                 obj.amplitude = obj.amplitude + value;
             end
         end
-        
+
         function obj = setPhase(obj, value, varargin)
             % Sets the phase of the field.
             %
@@ -179,7 +179,7 @@ classdef Field
                 obj.phase(:) = value;
             end
         end
-        
+
         function obj = addPhase(obj, value, varargin)
             % Adds a value to the phase of the field.
             %
@@ -214,7 +214,7 @@ classdef Field
                 obj.phase = obj.phase + value;
             end
         end
-        
+
         function type = standardizeType(~, inputType)
             % Maps alias strings to a canonical shape name.
             %
@@ -224,10 +224,10 @@ classdef Field
             % Returns
             %   type : Canonical shape name ('global', 'rectangle', 'circle', or 'annulus').
             typeMap = struct(...
-                'global', 'global', 'g', 'global', 'glob', 'global', ...
-                'rect', 'rectangle', 'rectangle', 'rectangle', 'r', 'rectangle', 'rectangular', 'rectangle', ...
-                'circ', 'circle', 'circle', 'circle', 'c', 'circle', 'circular', 'circle', ...
-                'annu', 'annulus', 'annulus', 'annulus', 'a', 'annulus', 'annular', 'annulus');
+            'global', 'global', 'g', 'global', 'glob', 'global', ...
+            'rect', 'rectangle', 'rectangle', 'rectangle', 'r', 'rectangle', 'rectangular', 'rectangle', ...
+            'circ', 'circle', 'circle', 'circle', 'c', 'circle', 'circular', 'circle', ...
+            'annu', 'annulus', 'annulus', 'annulus', 'a', 'annulus', 'annular', 'annulus');
             if ~ischar(inputType) && ~isstring(inputType)
                 error('Input type must be a string.');
             end
@@ -238,7 +238,7 @@ classdef Field
                 error('Invalid type: %s. Must be ''global'', ''rectangle'', ''circle'', or ''annulus''.', inputType);
             end
         end
-        
+
         function W = wdf(obj)
             % Displays the Wigner Distribution Function for the field.
             %
@@ -251,7 +251,7 @@ classdef Field
             ylabel('Local Spatial Frequency (m^{-1})');
             xlabel('x (m)');
         end
-        
+
         function obj = fft(obj)
             % Applies a 2D FFT to the field and updates the field.
             %
@@ -259,7 +259,7 @@ classdef Field
             %   obj : Field object.
             obj = obj.setComplexField(fftshift(fft2(obj.complexField)));
         end
-        
+
         function [xAxis, amplitudeData] = getAmplitudeCross(obj, axisType, pos)
             % Returns the amplitude cross section of a 2D field.
             %
@@ -296,7 +296,7 @@ classdef Field
                 error('Invalid axisType. Must be ''x'' or ''y''.');
             end
         end
-        
+
         function [xAxis, phaseData] = getPhaseCross(obj, axisType, pos)
             % Returns the phase cross section of a 2D field.
             %
@@ -333,7 +333,7 @@ classdef Field
                 error('Invalid axisType. Must be ''x'' or ''y''.');
             end
         end
-        
+
         function obj = unwrap(obj)
             % Unwraps the phase of the field using a phase unwrapping utility.
             %
@@ -341,74 +341,57 @@ classdef Field
             %   obj : Field object.
             obj.phase = osf.utils.phaseUnwrap(obj.phase);
         end
-        
+
         function obj = show(obj, varargin)
             % Displays the field using a dashboard.
-            %
-            % Optionals
-            %   'plotType' : Plot type ('default', 'amplitude', or 'phase'; default: 'default').
-            %   'unwrap' : Logical flag to unwrap phase (default: true).
-            %
-            % Example
-            %   obj.show('plotType', 'phase');
-            p = inputParser;
-            addOptional(p, 'plotType', 'default', @(x) ismember(x, {'default', 'amplitude', 'a', 'phase', 'p'}));
-            addParameter(p, 'unwrap', true, @islogical);
-            p.KeepUnmatched = true;
-            parse(p, varargin{:});
-            plotType = p.Results.plotType;
-            unwrapFlag = p.Results.unwrap;
-            
-            phaseType = 'phase';
-            if unwrapFlag
-                phaseType = 'phase.unwrap';
-            end
-            
-            if ismember(plotType, {'default'})
-                osf.Dashboard([2,1], p.Unmatched).show(obj, 'amplitude').show(obj, phaseType);
-            elseif ismember(plotType, {'amplitude', 'a'})
-                osf.show(obj, 'amplitude', p.Unmatched);
-            elseif ismember(plotType, {'phase', 'p'})
-                osf.show(obj, 'phase', p.Unmatched);
-            else
-                error('Unsupported plotType %s', plotType);
-            end
+            osf.Dashboard([2,1], varargin{:}).show(obj, 'amplitude', varargin{:}).show(obj, 'phase', varargin{:});
         end
-        
+
         function obj = img(obj, path, varargin)
-            % Imports an image and assigns it to the field.
-            %
-            % Required
-            %   path : Path to the image file.
-            %
-            % Optionals
-            %   'type' : Field type to update ('phase' or 'amplitude'; default: 'phase').
-            %   'range' : Normalization range as a two-element vector (default: [0 1]).
             p = inputParser;
-            addOptional(p, 'type', 'phase', @(x) ismember(x, {'phase', 'amplitude'}));
-            addOptional(p, 'range', [0 1], @(x) isnumeric(x) && numel(x) == 2);
-            parse(p, varargin{:});
-            
-            type = p.Results.type;
-            range = p.Results.range;
-            
-            img = imread(path);
-            if size(img, 3) == 3
-                img = rgb2gray(img);
+            p.KeepUnmatched = true;
+            addRequired(p, 'path', @(x) ischar(x) || isstring(x));
+            addParameter(p, 'type', 'amplitude', @(x) ismember(x, {'phase','amplitude'}));
+            addParameter(p, 'range', [0 1], @(x) isnumeric(x) && numel(x)==2);
+            addParameter(p, 'scale', 1, @(x) isnumeric(x) && isscalar(x) && x>0);
+            parse(p, path, varargin{:});
+
+            type  = validatestring(p.Results.type, {'phase','amplitude'});
+            rng   = p.Results.range;
+            scale = p.Results.scale;
+
+            I = imread(path);
+            if size(I,3)==3
+                I = rgb2gray(I);
             end
-            img = double(img);
-            img = (img - min(img(:))) / (max(img(:)) - min(img(:)));
-            img = range(1) + img * (range(2) - range(1));
+            I = osf.utils.minMaxNorm(I, rng);
+
             targetSize = obj.size;
-            img = imresize(img, targetSize, 'bilinear');
-            
-            if strcmp(type, 'phase')
-                obj.phase = img;
+            scaledSize = max(1, round(scale .* targetSize));
+            Iresized  = imresize(I, scaledSize, 'bilinear');
+
+            canvas = zeros(targetSize);
+            if scale <= 1
+                rowOff = floor((targetSize(1)-scaledSize(1))/2);
+                colOff = floor((targetSize(2)-scaledSize(2))/2);
+                r = (1:scaledSize(1)) + rowOff;
+                c = (1:scaledSize(2)) + colOff;
+                canvas(r, c) = Iresized;
             else
-                obj.amplitude = img;
+                rowOff = floor((scaledSize(1)-targetSize(1))/2);
+                colOff = floor((scaledSize(2)-targetSize(2))/2);
+                r = (1:targetSize(1)) + rowOff;
+                c = (1:targetSize(2)) + colOff;
+                canvas = Iresized(r, c);
+            end
+
+            if strcmp(type, 'phase')
+                obj.phase = canvas;
+            else
+                obj.amplitude = canvas;
             end
         end
-        
+
         function operationCheck(a, b)
             % Checks compatibility for operations between two Field objects.
             %
@@ -425,7 +408,7 @@ classdef Field
                 error('Fields must have the same size and resolution.');
             end
         end
-        
+
         function result = plus(a, b)
             % Adds two Field objects element-wise.
             %
@@ -440,7 +423,7 @@ classdef Field
             result.amplitude = a.amplitude + b.amplitude;
             result.phase = a.phase + b.phase;
         end
-        
+
         function result = minus(a, b)
             % Subtracts one Field object from another element-wise.
             %
@@ -455,7 +438,7 @@ classdef Field
             result.amplitude = a.amplitude - b.amplitude;
             result.phase = a.phase - b.phase;
         end
-        
+
         function result = times(a, b)
             % Multiplies two Field objects element-wise.
             %
@@ -470,7 +453,7 @@ classdef Field
             result.amplitude = a.amplitude .* b.amplitude;
             result.phase = a.phase .* b.phase;
         end
-        
+
         function result = mtimes(a, b)
             % Multiplies two Field objects element-wise (using * operator).
             %
@@ -485,7 +468,7 @@ classdef Field
             result.amplitude = a.amplitude .* b.amplitude;
             result.phase = a.phase .* b.phase;
         end
-        
+
         function result = rdivide(a, b)
             % Divides one Field object by another element-wise.
             %
@@ -500,7 +483,7 @@ classdef Field
             result.amplitude = a.amplitude ./ b.amplitude;
             result.phase = a.phase ./ b.phase;
         end
-        
+
         function val = get.intensity(obj)
             % Returns the intensity of the field computed as the squared magnitude.
             %
@@ -511,7 +494,7 @@ classdef Field
             %   val : Intensity.
             val = abs(obj.complexField) .^ 2;
         end
-        
+
         function result = get.complexField(obj)
             % Returns the complex field computed as amplitude .* exp(1i*phase).
             %

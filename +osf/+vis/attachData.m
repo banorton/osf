@@ -1,21 +1,29 @@
 function attachData(ax, data)
-    cla(ax);
+    axes(ax);
 
     switch data.meta.plotType
-    case {'osf.Field.default', 'a', 'amplitude', 'phase', 'p', 'phase.unwrap', 'p.unwrap'}
+    case {'osf.Field.default', 'a', 'amplitude', 'phase', 'p'}
+        data.imageData = flipud(data.imageData);
         imagesc(data.xAxis, data.yAxis, data.imageData);
-        colormap(gca, data.cmap);
+        colormap(data.cmap);
         colorbar;
         title(data.title);
         xlabel(data.xlabel);
         ylabel(data.ylabel);
-        % axis equal; axis tight;
+        axis xy;
+        axis equal;
+        axis tight;
 
     case {'cross', 'amplitude.cross', 'a.cross', 'phase.cross', 'p.cross'}
         hold on;
-        plot(data.xAxis, data.xCross, '-o', 'Color', [0.3 0.5 1 0.2], 'MarkerSize', 3, 'DisplayName', 'X Cross Section');
-        plot(data.yAxis, data.yCross, '-o', 'Color', [1 0 0 0.2], 'MarkerSize', 3, 'DisplayName', 'Y Cross Section');
+        plot(data.yAxis, data.yCross, '-', 'Color', [1 0 0 0.8], 'MarkerSize', 3, 'DisplayName', 'Y Cross Section');
+        plot(data.xAxis, data.xCross, '-', 'Color', [0.3 0.5 1 0.8], 'MarkerSize', 3, 'DisplayName', 'X Cross Section');
         hold off;
+
+        xCenter = mean(data.xAxis);
+        xRange = (max(data.xAxis) - min(data.xAxis)) / data.zoom / 2;
+        xlim([xCenter - xRange, xCenter + xRange]);
+
         title(data.title);
         xlabel(data.xlabel);
         ylabel(data.ylabel);
@@ -47,6 +55,9 @@ function attachData(ax, data)
         title(data.title);
         xlabel(data.xlabel);
         ylabel(data.ylabel);
+        % axis xy;
+        % axis equal;
+        % axis tight;
 
     otherwise
         error('Unhandled plotType: %s', data.meta.plotType);

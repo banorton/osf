@@ -22,16 +22,17 @@ classdef Dashboard < handle
             % Parameters
             %   'figPosition' : Numeric vector [x y width height] for figure position (default: [750 350 450 450]).
             %   'title'       : Title for the dashboard (default: empty string).
-            
+
             if numel(subplotSize) ~= 2
                 error('subplotSize must be a two-element vector: [rows, cols]');
             end
 
             p = inputParser;
+            p.KeepUnmatched = true;
             addParameter(p, 'figPosition', [750 350 450 450], @(x) isnumeric(x) && numel(x) == 4);
             addParameter(p, 'title', '', @(x) ischar(x) || isstring(x));
             parse(p, varargin{:});
-            
+
             obj.figPosition = p.Results.figPosition;
             obj.title = p.Results.title;
             obj.subplotRows = subplotSize(1);
@@ -39,50 +40,41 @@ classdef Dashboard < handle
             obj.numSubplots = obj.subplotRows * obj.subplotCols;
             obj.occupiedSubplots = false(1, obj.numSubplots);
             obj.fig = figure('Position', obj.figPosition);
-            
+
             if ~isempty(obj.title)
                 sgtitle(obj.fig, obj.title, 'FontWeight', 'bold', 'FontSize', 20, 'Tag', 'theme');
             end
         end
 
-        function obj = show(obj, varargin)
-            % Displays data in the next available subplot.
-            %
-            % Optionals
-            %   If no additional arguments are provided, resets the dashboard.
-            %
-            % Required (if additional arguments are provided)
-            %   dataObj  : Data object to display.
-            %   plotType : Type of plot to generate (default: 'default').
-            %   extraArgs: Any extra arguments to pass to the visualization function.
-            %
-            % Example
-            %   dashboard.show(dataObj, 'phase', 'option', value);
-            if nargin == 1
-                obj.reset();
-                return;
-            end
+        function obj = show(obj, dataObj, varargin)
+            % Displays data in the next available subplot, or overlays on the same
+            % axis if there's only one subplot and it's already occupied.
 
-            if nargin < 3 || isempty(varargin{2})
-                plotType = 'default';
-                dataObj = varargin{1};
-                extraArgs = {};
+            p = inputParser;
+            p.KeepUnmatched = true;
+            addRequired(p, 'dataObj');
+            addOptional(p, 'plotType', 'default', @(x) ischar(x) || isstring(x));
+            parse(p, dataObj, varargin{:});
+
+            plotType = p.Results.plotType;
+
+            % Determine subplot index
+            if obj.numSubplots == 1
+                subplotIndex = 1;
             else
-                dataObj = varargin{1};
-                plotType = varargin{2};
-                extraArgs = varargin(3:end);
+                nextIndex = find(~obj.occupiedSubplots, 1);
+                if isempty(nextIndex)
+                    error('All subplots are filled. Cannot add more plots.');
+                end
+                subplotIndex = nextIndex;
+                obj.occupiedSubplots(subplotIndex) = true;
             end
 
-            nextIndex = find(~obj.occupiedSubplots, 1);
-            if isempty(nextIndex)
-                error('All subplots are filled. Cannot add more plots.');
-            end
+            ax = subplot(obj.subplotRows, obj.subplotCols, subplotIndex);
+            hold(ax, 'on');
 
-            obj.occupiedSubplots(nextIndex) = true;
-            subplot(obj.subplotRows, obj.subplotCols, nextIndex);
-            
-            data = osf.vis.prepData(dataObj, plotType, extraArgs{:});
-            osf.vis.attachData(gca, data);
+            data = osf.vis.prepData(dataObj, plotType, p.Unmatched);
+            osf.vis.attachData(ax, data);
             osf.vis.applyTheme(obj.fig);
         end
 

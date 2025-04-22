@@ -2,10 +2,11 @@ function data = prepData(obj, plotType, varargin)
     p = inputParser;
     addRequired(p, 'obj');
     addRequired(p, 'plotType');
-    addParameter(p, 'unwrap', false, @islogical);
+    addParameter(p, 'unwrap', true, @islogical);
     addParameter(p, 'wdfLimit', 1, @(x) isnumeric(x) && (x <= 1 && x > 0));
     addParameter(p, 'overlayDetector', false, @(x) isa(x, 'osf.Detector'));
-    addParameter(p, 'title', '', @ischar);
+    addParameter(p, 'title', 'default', @ischar);
+    addParameter(p, 'zoom', 1, @isnumeric);
     parse(p, obj, plotType, varargin{:});
 
     plotType = p.Results.plotType;
@@ -30,7 +31,7 @@ function data = prepData(obj, plotType, varargin)
         data.yAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, rows) * 1e3;
         data.imageData = obj.amplitude;
         data.cmap = 'gray';
-        if ~isempty(title)
+        if strcmp(title, 'default')
             data.title = title;
         else
             data.title = 'Field Amplitude';
@@ -39,19 +40,19 @@ function data = prepData(obj, plotType, varargin)
         data.ylabel = 'y (mm)';
         data.colorbarLabel = 'Amplitude';
 
-    case {'phase', 'p', 'phase.unwrap', 'p.unwrap'}
+    case {'phase', 'p'}
         title = p.Results.title;
         unwrapFlag = p.Results.unwrap;
         data.xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, cols) * 1e3;
         data.yAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, rows) * 1e3;
-        if unwrapFlag || ismember(plotType, {'phase.unwrap', 'p.unwrap'})
+        if unwrapFlag
             imageData = osf.utils.phaseUnwrap(obj.phase);
         else
             imageData = obj.phase;
         end
         data.imageData = imageData;
         data.cmap = obj.cmap;
-        if ~isempty(title)
+        if strcmp(title, 'default')
             data.title = title;
         else
             data.title = 'Field Phase';
@@ -61,6 +62,7 @@ function data = prepData(obj, plotType, varargin)
         data.colorbarLabel = 'Phase';
 
     case {'cross', 'a.cross', 'amplitude.cross'}
+        title = p.Results.title;
         xpos = round(rows/2);
         ypos = round(cols/2);
         [data.xAxis, data.xCross] = obj.getAmplitudeCross('x', xpos);
@@ -69,8 +71,13 @@ function data = prepData(obj, plotType, varargin)
         data.yAxis = data.yAxis * 1e3;
         data.xlabel = 'Position (mm)';
         data.ylabel = 'Amplitude';
-        data.title = sprintf('Amplitude Cross Section (x = %.2fmm, y = %.2fmm)', ...
-        xpos * obj.resolution * 1e3, ypos * obj.resolution * 1e3);
+        if strcmp(title, 'default')
+            data.title = sprintf('Amplitude Cross Section (x = %.2fmm, y = %.2fmm)', ...
+            (floor(rows/2) - xpos) * obj.resolution * 1e3, (floor(cols/2) - ypos) * obj.resolution * 1e3);
+        else
+            data.title = title;
+        end
+        data.zoom = p.Results.zoom;
 
     case {'phase.cross', 'p.cross'}
         xpos = round(rows/2);
@@ -84,7 +91,8 @@ function data = prepData(obj, plotType, varargin)
         data.xlabel = 'Position (mm)';
         data.ylabel = 'Phase';
         data.title = sprintf('Phase Cross Section (x = %.2fmm, y = %.2fmm)', ...
-        xpos * obj.resolution * 1e3, ypos * obj.resolution * 1e3);
+        (floor(rows/2) - xpos) * obj.resolution * 1e3, (floor(cols/2) - ypos) * obj.resolution * 1e3);
+        data.zoom = p.Results.zoom;
 
     case {'wdf', 'amplitude.wdf', 'a.wdf', 'wdf.x', 'amplitude.wdf.x', 'a.wdf.x'}
         title = p.Results.title;
@@ -109,7 +117,9 @@ function data = prepData(obj, plotType, varargin)
         data.xlabel = 'x (m)';
         data.ylabel = 'Local Spatial Frequency (m^{-1})';
         data.colorbarLabel = 'Wigner-Ville Intensity';
-        data.title = title;
+        if strcmp(title, 'default')
+            data.title = '';
+        end
 
     case {'phase.wdf', 'p.wdf'}
         wdfLimit = p.Results.wdfLimit;
@@ -132,10 +142,12 @@ function data = prepData(obj, plotType, varargin)
         data.xAxis = 1:size(obj, 2);
         data.yAxis = 1:size(obj, 1);
         data.cmap = 'gray';
-        data.title = title;
         data.xlabel = '';
         data.ylabel = '';
         data.colorbarLabel = 'Value';
+        if strcmp(title, 'default')
+            data.title = '';
+        end
 
     otherwise
         error('Unhandled plotType: %s', plotType);
