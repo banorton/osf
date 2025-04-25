@@ -11,13 +11,15 @@ function attachData(ax, data)
         xlabel(data.xlabel);
         ylabel(data.ylabel);
         axis xy;
-        % axis equal;
-        % axis tight;
 
     case {'cross', 'amplitude.cross', 'a.cross', 'phase.cross', 'p.cross'}
         hold on;
-        plot(data.yAxis, data.yCross, '-', 'Color', [1 0 0 0.8], 'MarkerSize', 3, 'DisplayName', 'Y Cross Section');
-        plot(data.xAxis, data.xCross, '-', 'Color', [0.3 0.5 1 0.8], 'MarkerSize', 3, 'DisplayName', 'X Cross Section');
+        if ismember(data.crossAxis, {'both', 'y'})
+            plot(data.yAxis, data.yCross, '-', 'Color', [1 0 0 0.8], 'MarkerSize', 3, 'DisplayName', 'Y Cross Section');
+        end
+        if ismember(data.crossAxis, {'both', 'x'})
+            plot(data.xAxis, data.xCross, '-', 'Color', [0.3 0.5 1 0.8], 'MarkerSize', 3, 'DisplayName', 'X Cross Section');
+        end
         hold off;
 
         xCenter = mean(data.xAxis);
@@ -46,6 +48,7 @@ function attachData(ax, data)
         ylabel(data.ylabel);
 
     case {'osf.Sim.default'}
+        cla(ax);
         attachSim(ax, data);
 
     case {'double.default', 'single.default', 'uint8.default', 'uint16.default'}
@@ -56,8 +59,6 @@ function attachData(ax, data)
         xlabel(data.xlabel);
         ylabel(data.ylabel);
         % axis xy;
-        % axis equal;
-        % axis tight;
 
     otherwise
         error('Unhandled plotType: %s', data.meta.plotType);

@@ -5,8 +5,9 @@ function data = prepData(obj, plotType, varargin)
     addParameter(p, 'unwrap', true, @islogical);
     addParameter(p, 'wdfLimit', 1, @(x) isnumeric(x) && (x <= 1 && x > 0));
     addParameter(p, 'overlayDetector', false, @(x) isa(x, 'osf.Detector'));
-    addParameter(p, 'title', 'default', @ischar);
+    addParameter(p, 'title', 'default', @(x) ischar(x) || isstring(x));
     addParameter(p, 'zoom', 1, @isnumeric);
+    addParameter(p, 'crossAxis', 'both', @(x) ismember(x, {'both', 'x', 'y'}));
     parse(p, obj, plotType, varargin{:});
 
     plotType = p.Results.plotType;
@@ -29,12 +30,12 @@ function data = prepData(obj, plotType, varargin)
         title = p.Results.title;
         data.xAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, cols) * 1e3;
         data.yAxis = linspace(-obj.fieldLength/2, obj.fieldLength/2, rows) * 1e3;
-        data.imageData = obj.amplitude;
+        data.imageData = osf.utils.minMaxNorm(obj.amplitude);
         data.cmap = 'gray';
         if strcmp(title, 'default')
-            data.title = title;
-        else
             data.title = 'Field Amplitude';
+        else
+            data.title = title;
         end
         data.xlabel = 'x (mm)';
         data.ylabel = 'y (mm)';
@@ -63,6 +64,7 @@ function data = prepData(obj, plotType, varargin)
 
     case {'cross', 'a.cross', 'amplitude.cross'}
         title = p.Results.title;
+        data.crossAxis = p.Results.crossAxis;
         xpos = round(rows/2);
         ypos = round(cols/2);
         [data.xAxis, data.xCross] = obj.getAmplitudeCross('x', xpos);
@@ -80,6 +82,7 @@ function data = prepData(obj, plotType, varargin)
         data.zoom = p.Results.zoom;
 
     case {'phase.cross', 'p.cross'}
+        data.crossAxis = p.Results.crossAxis;
         xpos = round(rows/2);
         ypos = round(cols/2);
         [data.xAxis, data.xCross] = obj.getPhaseCross('x', xpos);

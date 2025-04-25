@@ -450,7 +450,7 @@ classdef Sim < handle
             end
         end
 
-        function img = propScan(obj, field, numSteps, varargin)
+        function img = scan(obj, field, numSteps, varargin)
             % Propagates a field stepwise and records its intensity.
             %
             % Required
